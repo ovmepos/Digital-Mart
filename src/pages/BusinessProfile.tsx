@@ -28,7 +28,7 @@ const BusinessProfile: React.FC = () => {
                 
                 <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-slate-600">
                   <span className="flex items-center"><MapPin className="w-4 h-4 mr-1.5 text-slate-400" /> Global Operations</span>
-                  <span className="flex items-center"><Mail className="w-4 h-4 mr-1.5 text-slate-400" /> ovmepos@gmail.com</span>
+                  <a href="mailto:ovmepos@gmail.com" className="flex items-center hover:text-blue-600 transition-colors"><Mail className="w-4 h-4 mr-1.5 text-slate-400" /> ovmepos@gmail.com</a>
                 </div>
               </div>
               
@@ -139,6 +139,20 @@ const BusinessProfile: React.FC = () => {
                     </div>
                   </div>
                   <ExternalLink className="w-4 h-4 text-slate-300 group-hover:text-indigo-600" />
+                </a>
+
+                {/* Email */}
+                <a href="mailto:ovmepos@gmail.com" className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 border border-slate-100 hover:border-red-200 transition-all group">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center text-red-500 group-hover:bg-red-100 mr-3 transition-colors">
+                      <Mail className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-slate-900 text-sm">Email</div>
+                      <div className="text-xs text-slate-500">ovmepos@gmail.com</div>
+                    </div>
+                  </div>
+                  <ExternalLink className="w-4 h-4 text-slate-300 group-hover:text-red-500" />
                 </a>
 
               </div>
