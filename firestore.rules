@@ -1,0 +1,160 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: users
+// Document ID: userId (matches auth.uid)
+// Fields:
+//   - name: string (required, < 100 chars)
+//   - email: string (required, valid email)
+//   - role: string (required, 'admin' or 'user', immutable by non-admin)
+//   - walletBalance: number (required, >= 0, immutable by non-admin)
+//   - createdAt: timestamp (required, immutable)
+//
+// Collection: services
+// Document ID: auto-generated
+// Fields:
+//   - name: string (required, < 100 chars)
+//   - category: string (required, < 50 chars)
+//   - pricePer1000: number (required, >= 0)
+//   - minQuantity: number (required, >= 0)
+//   - maxQuantity: number (required, >= minQuantity)
+//   - description: string (required, < 1000 chars)
+//   - isActive: boolean (required)
+//   - createdAt: timestamp (required, immutable)
+//
+// Collection: orders
+// Document ID: auto-generated
+// Fields:
+//   - userId: string (required, matches auth.uid, immutable)
+//   - serviceId: string (required, < 100 chars)
+//   - serviceName: string (required, < 100 chars)
+//   - link: string (required, valid URL, < 500 chars)
+//   - quantity: number (required, > 0)
+//   - totalPrice: number (required, >= 0)
+//   - status: string (required, 'Pending', 'Processing', 'Completed', 'Canceled')
+//   - createdAt: timestamp (required, immutable)
+//
+// ===============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "ovmepos@gmail.com" && request.auth.token.email_verified == true));
+    }
+    
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+    
+    function isValidUrl(url) {
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+    
+    function hasOnlyAllowedFields(allowedFields) {
+      return request.resource.data.keys().hasOnly(allowedFields);
+    }
+    
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    
+    function isValidUser(data) {
+      return hasOnlyAllowedFields(['name', 'email', 'role', 'walletBalance', 'createdAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.email is string && isValidEmail(data.email) &&
+             data.role in ['admin', 'user'] &&
+             data.walletBalance is number && data.walletBalance >= 0 &&
+             data.createdAt is timestamp;
+    }
+    
+    function isValidService(data) {
+      return hasOnlyAllowedFields(['name', 'category', 'pricePer1000', 'minQuantity', 'maxQuantity', 'description', 'isActive', 'createdAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.category is string && data.category.size() > 0 && data.category.size() < 50 &&
+             data.pricePer1000 is number && data.pricePer1000 >= 0 &&
+             data.minQuantity is number && data.minQuantity >= 0 &&
+             data.maxQuantity is number && data.maxQuantity >= data.minQuantity &&
+             data.description is string && data.description.size() < 1000 &&
+             data.isActive is bool &&
+             data.createdAt is timestamp;
+    }
+    
+    function isValidOrder(data) {
+      return hasOnlyAllowedFields(['userId', 'serviceId', 'serviceName', 'link', 'quantity', 'totalPrice', 'status', 'createdAt']) &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.serviceId is string && data.serviceId.size() > 0 && data.serviceId.size() < 100 &&
+             data.serviceName is string && data.serviceName.size() > 0 && data.serviceName.size() < 100 &&
+             data.link is string && isValidUrl(data.link) && data.link.size() < 500 &&
+             data.quantity is number && data.quantity > 0 &&
+             data.totalPrice is number && data.totalPrice >= 0 &&
+             data.status in ['Pending', 'Processing', 'Completed', 'Canceled'] &&
+             data.createdAt is timestamp;
+    }
+    
+    // ===============================================================
+    // Rules
+    // ===============================================================
+    
+    match /users/{userId} {
+      // Users can read their own data, admins can read all
+      allow read: if isOwner(userId) || isAdmin();
+      
+      // Users can create their own profile, but cannot make themselves admin
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && 
+                    ((request.resource.data.role == 'user' && request.resource.data.walletBalance == 0) || isAdmin());
+                    
+      // Users can update their own profile (name only), admins can update anything
+      allow update: if (isOwner(userId) && isValidUser(request.resource.data) && 
+                        request.resource.data.role == resource.data.role && 
+                        request.resource.data.walletBalance == resource.data.walletBalance &&
+                        request.resource.data.createdAt == resource.data.createdAt) || 
+                       (isAdmin() && isValidUser(request.resource.data));
+                       
+      allow delete: if isAdmin();
+    }
+    
+    match /services/{serviceId} {
+      // Anyone authenticated can read active services, admins can read all
+      allow read: if isAuthenticated() && (resource.data.isActive == true || isAdmin());
+      
+      // Only admins can create, update, delete services
+      allow create: if isAdmin() && isValidService(request.resource.data);
+      allow update: if isAdmin() && isValidService(request.resource.data) && 
+                    request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isAdmin();
+    }
+    
+    match /orders/{orderId} {
+      // Users can read their own orders, admins can read all
+      allow read: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
+      
+      // Users can create orders if they have enough balance (balance check handled via transaction in client/functions)
+      // Here we just validate the shape.
+      allow create: if isAuthenticated() && isValidOrder(request.resource.data) && 
+                    request.resource.data.status == 'Pending';
+                    
+      // Only admins can update orders (e.g., status changes)
+      allow update: if isAdmin() && isValidOrder(request.resource.data) && 
+                    request.resource.data.userId == resource.data.userId &&
+                    request.resource.data.createdAt == resource.data.createdAt;
+                    
+      allow delete: if isAdmin();
+    }
+  }
+}
