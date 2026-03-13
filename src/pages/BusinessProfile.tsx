@@ -86,7 +86,7 @@ const BusinessProfile: React.FC = () => {
               <div className="space-y-3">
                 
                 {/* Instagram */}
-                <a href="#" className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 border border-slate-100 hover:border-pink-200 transition-all group">
+                <a href="https://instagram.com/digitalmart" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 border border-slate-100 hover:border-pink-200 transition-all group">
                   <div className="flex items-center">
                     <div className="w-10 h-10 bg-pink-50 rounded-lg flex items-center justify-center text-pink-600 group-hover:bg-pink-100 mr-3 transition-colors">
                       <Instagram className="w-5 h-5" />
@@ -100,7 +100,7 @@ const BusinessProfile: React.FC = () => {
                 </a>
 
                 {/* Twitter */}
-                <a href="#" className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 border border-slate-100 hover:border-blue-200 transition-all group">
+                <a href="https://twitter.com/digitalmart_hq" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 border border-slate-100 hover:border-blue-200 transition-all group">
                   <div className="flex items-center">
                     <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center text-blue-400 group-hover:bg-blue-100 mr-3 transition-colors">
                       <Twitter className="w-5 h-5" />
@@ -114,7 +114,7 @@ const BusinessProfile: React.FC = () => {
                 </a>
 
                 {/* LinkedIn */}
-                <a href="#" className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 border border-slate-100 hover:border-blue-200 transition-all group">
+                <a href="https://linkedin.com/company/digital-mart" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 border border-slate-100 hover:border-blue-200 transition-all group">
                   <div className="flex items-center">
                     <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center text-blue-700 group-hover:bg-blue-100 mr-3 transition-colors">
                       <Linkedin className="w-5 h-5" />
@@ -128,7 +128,7 @@ const BusinessProfile: React.FC = () => {
                 </a>
 
                 {/* Facebook */}
-                <a href="#" className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 border border-slate-100 hover:border-indigo-200 transition-all group">
+                <a href="https://facebook.com/digitalmartofficial" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 border border-slate-100 hover:border-indigo-200 transition-all group">
                   <div className="flex items-center">
                     <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600 group-hover:bg-indigo-100 mr-3 transition-colors">
                       <Facebook className="w-5 h-5" />
