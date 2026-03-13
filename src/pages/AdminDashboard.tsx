@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase';
-import { collection, query, onSnapshot, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { Navigate } from 'react-router-dom';
-import { Users, ShoppingCart, Settings, PlusCircle } from 'lucide-react';
+import { Users, ShoppingCart, Settings, PlusCircle, Trash2 } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
   const { profile, loading } = useAuth();
@@ -62,14 +62,25 @@ const AdminDashboard: React.FC = () => {
         createdAt: serverTimestamp()
       });
       setNewService({ name: '', category: '', pricePer1000: 0, minQuantity: 100, maxQuantity: 10000, description: '', isActive: true });
-      alert('Service added!');
     } catch (err: any) {
-      alert('Error adding service: ' + err.message);
+      console.error('Error adding service: ' + err.message);
     }
   };
 
   const toggleServiceStatus = async (serviceId: string, currentStatus: boolean) => {
     await updateDoc(doc(db, 'services', serviceId), { isActive: !currentStatus });
+  };
+
+  const handleDeleteOrder = async (orderId: string) => {
+    await deleteDoc(doc(db, 'orders', orderId));
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    await deleteDoc(doc(db, 'users', userId));
+  };
+
+  const handleDeleteService = async (serviceId: string) => {
+    await deleteDoc(doc(db, 'services', serviceId));
   };
 
   return (
@@ -125,7 +136,7 @@ const AdminDashboard: React.FC = () => {
                       {order.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm">
+                  <td className="px-6 py-4 text-sm flex items-center space-x-2">
                     <select 
                       value={order.status}
                       onChange={(e) => updateOrderStatus(order.id, e.target.value)}
@@ -136,6 +147,9 @@ const AdminDashboard: React.FC = () => {
                       <option value="Completed">Completed</option>
                       <option value="Canceled">Canceled</option>
                     </select>
+                    <button onClick={() => handleDeleteOrder(order.id)} className="text-red-500 hover:text-red-700 p-1">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -155,6 +169,7 @@ const AdminDashboard: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Balance (OMR)</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Add Funds</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -168,6 +183,11 @@ const AdminDashboard: React.FC = () => {
                     <button onClick={() => updateUserBalance(u.id, u.walletBalance, 1)} className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs hover:bg-green-200">+1</button>
                     <button onClick={() => updateUserBalance(u.id, u.walletBalance, 5)} className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs hover:bg-green-200">+5</button>
                     <button onClick={() => updateUserBalance(u.id, u.walletBalance, 10)} className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs hover:bg-green-200">+10</button>
+                  </td>
+                  <td className="px-6 py-4 text-sm">
+                    <button onClick={() => handleDeleteUser(u.id)} className="text-red-500 hover:text-red-700 p-1">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -216,6 +236,7 @@ const AdminDashboard: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price/1k</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -230,6 +251,11 @@ const AdminDashboard: React.FC = () => {
                         className={`px-3 py-1 rounded-full text-xs font-medium ${s.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
                       >
                         {s.isActive ? 'Active' : 'Disabled'}
+                      </button>
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      <button onClick={() => handleDeleteService(s.id)} className="text-red-500 hover:text-red-700 p-1">
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </td>
                   </tr>
