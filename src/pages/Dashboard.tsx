@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp, doc, runTransaction } from 'firebase/firestore';
-import { Clock, CheckCircle, Loader, XCircle } from 'lucide-react';
+import { Clock, CheckCircle, Loader, XCircle, ShoppingBag, TrendingUp, Wallet } from 'lucide-react';
 
 interface Service {
   id: string;
@@ -138,157 +138,187 @@ const Dashboard: React.FC = () => {
     switch (status) {
       case 'Pending': return <Clock className="w-4 h-4 text-yellow-500" />;
       case 'Processing': return <Loader className="w-4 h-4 text-blue-500 animate-spin" />;
-      case 'Completed': return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'Completed': return <CheckCircle className="w-4 h-4 text-emerald-500" />;
       case 'Canceled': return <XCircle className="w-4 h-4 text-red-500" />;
       default: return null;
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div className="min-h-screen bg-slate-50 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* Order Form */}
-        <div className="lg:col-span-1">
-          <div className="bg-white shadow rounded-lg p-6 border border-gray-200">
-            <h2 className="text-xl font-bold mb-4 text-gray-900">New Order</h2>
-            
-            {error && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm">{error}</div>}
-            {success && <div className="mb-4 p-3 bg-green-50 text-green-700 rounded-md text-sm">{success}</div>}
-
-            <form onSubmit={handleOrder}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                <select 
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                >
-                  {categories.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Service</label>
-                <select 
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  value={selectedServiceId}
-                  onChange={(e) => {
-                    setSelectedServiceId(e.target.value);
-                    const svc = services.find(s => s.id === e.target.value);
-                    if (svc) setQuantity(svc.minQuantity);
-                  }}
-                >
-                  {filteredServices.map(svc => (
-                    <option key={svc.id} value={svc.id}>
-                      {svc.name} - {svc.pricePer1000} OMR / 1000
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {selectedService && (
-                <div className="mb-4 p-3 bg-blue-50 text-blue-800 text-sm rounded-md">
-                  {selectedService.description}
-                  <div className="mt-2 text-xs text-blue-600">
-                    Min: {selectedService.minQuantity} | Max: {selectedService.maxQuantity}
-                  </div>
-                </div>
-              )}
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Link</label>
-                <input 
-                  type="url" 
-                  required
-                  placeholder="https://..." 
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  value={link}
-                  onChange={(e) => setLink(e.target.value)}
-                />
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
-                <input 
-                  type="number" 
-                  required
-                  min={selectedService?.minQuantity || 1}
-                  max={selectedService?.maxQuantity || 100000}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  value={quantity}
-                  onChange={(e) => setQuantity(Number(e.target.value))}
-                />
-              </div>
-
-              <div className="mb-6 p-4 bg-gray-50 rounded-md flex justify-between items-center border border-gray-200">
-                <span className="text-gray-600 font-medium">Charge:</span>
-                <span className="text-xl font-bold text-blue-600">{totalPrice.toFixed(3)} OMR</span>
-              </div>
-
-              <button 
-                type="submit" 
-                disabled={loading || !selectedService}
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-              >
-                {loading ? 'Processing...' : 'Submit Order'}
-              </button>
-            </form>
+        {/* Dashboard Header */}
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold text-slate-900">My Dashboard</h1>
+            <p className="text-slate-600 mt-1">Manage your orders and track your digital growth.</p>
+          </div>
+          <div className="flex items-center bg-white px-4 py-3 rounded-xl shadow-sm border border-slate-200">
+            <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center mr-3">
+              <Wallet className="w-5 h-5 text-emerald-600" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Available Balance</p>
+              <p className="text-xl font-bold text-slate-900">{profile?.walletBalance.toFixed(3)} OMR</p>
+            </div>
           </div>
         </div>
 
-        {/* Order History */}
-        <div className="lg:col-span-2">
-          <div className="bg-white shadow rounded-lg border border-gray-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-              <h2 className="text-xl font-bold text-gray-900">Order History</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Quick Order Form */}
+          <div className="lg:col-span-1">
+            <div className="bg-white shadow-sm rounded-2xl p-6 border border-slate-200">
+              <h2 className="text-xl font-bold mb-6 text-slate-900 flex items-center">
+                <ShoppingBag className="w-5 h-5 mr-2 text-blue-600" /> Quick Order
+              </h2>
+              
+              {error && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-xl text-sm border border-red-100">{error}</div>}
+              {success && <div className="mb-4 p-3 bg-emerald-50 text-emerald-700 rounded-xl text-sm border border-emerald-100">{success}</div>}
+
+              <form onSubmit={handleOrder}>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
+                  <select 
+                    className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50"
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                  >
+                    {categories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Service</label>
+                  <select 
+                    className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50"
+                    value={selectedServiceId}
+                    onChange={(e) => {
+                      setSelectedServiceId(e.target.value);
+                      const svc = services.find(s => s.id === e.target.value);
+                      if (svc) setQuantity(svc.minQuantity);
+                    }}
+                  >
+                    {filteredServices.map(svc => (
+                      <option key={svc.id} value={svc.id}>
+                        {svc.name} - {svc.pricePer1000} OMR / 1k
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {selectedService && (
+                  <div className="mb-4 p-3 bg-blue-50 text-blue-800 text-sm rounded-xl border border-blue-100">
+                    {selectedService.description}
+                    <div className="mt-2 text-xs font-medium text-blue-600">
+                      Min: {selectedService.minQuantity.toLocaleString()} | Max: {selectedService.maxQuantity.toLocaleString()}
+                    </div>
+                  </div>
+                )}
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Target Link</label>
+                  <input 
+                    type="url" 
+                    required
+                    placeholder="https://..." 
+                    className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50"
+                    value={link}
+                    onChange={(e) => setLink(e.target.value)}
+                  />
+                </div>
+
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Quantity</label>
+                  <input 
+                    type="number" 
+                    required
+                    min={selectedService?.minQuantity || 1}
+                    max={selectedService?.maxQuantity || 100000}
+                    className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50"
+                    value={quantity}
+                    onChange={(e) => setQuantity(Number(e.target.value))}
+                  />
+                </div>
+
+                <div className="mb-6 p-4 bg-slate-900 rounded-xl flex justify-between items-center shadow-inner">
+                  <span className="text-slate-300 font-medium">Total Charge:</span>
+                  <span className="text-2xl font-bold text-white">{totalPrice.toFixed(3)} OMR</span>
+                </div>
+
+                <button 
+                  type="submit" 
+                  disabled={loading || !selectedService}
+                  className="w-full bg-blue-600 text-white py-3.5 px-4 rounded-xl font-bold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-colors shadow-lg shadow-blue-600/20"
+                >
+                  {loading ? 'Processing...' : 'Place Order'}
+                </button>
+              </form>
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Link</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Charge</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {orders.length === 0 ? (
+          </div>
+
+          {/* Order History */}
+          <div className="lg:col-span-2">
+            <div className="bg-white shadow-sm rounded-2xl border border-slate-200 overflow-hidden">
+              <div className="px-6 py-5 border-b border-slate-200 bg-white flex items-center justify-between">
+                <h2 className="text-xl font-bold text-slate-900 flex items-center">
+                  <TrendingUp className="w-5 h-5 mr-2 text-blue-600" /> Order History
+                </h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-200">
+                  <thead className="bg-slate-50">
                     <tr>
-                      <td colSpan={6} className="px-6 py-4 text-center text-gray-500">No orders found.</td>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">ID</th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Service</th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Link</th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Qty</th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Charge</th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
                     </tr>
-                  ) : (
-                    orders.map((order) => (
-                      <tr key={order.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.id.slice(0, 8)}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{order.serviceName}</td>
-                        <td className="px-6 py-4 text-sm text-blue-600 truncate max-w-[150px]">
-                          <a href={order.link} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                            {order.link}
-                          </a>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.quantity}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.totalPrice.toFixed(3)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                            ${order.status === 'Completed' ? 'bg-green-100 text-green-800' : 
-                              order.status === 'Processing' ? 'bg-blue-100 text-blue-800' : 
-                              order.status === 'Canceled' ? 'bg-red-100 text-red-800' : 
-                              'bg-yellow-100 text-yellow-800'}`}>
-                            {getStatusIcon(order.status)}
-                            <span className="ml-1">{order.status}</span>
-                          </span>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-slate-100">
+                    {orders.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                          <div className="flex flex-col items-center justify-center">
+                            <ShoppingBag className="w-12 h-12 text-slate-300 mb-3" />
+                            <p className="text-lg font-medium text-slate-900">No orders yet</p>
+                            <p className="text-sm">Your order history will appear here.</p>
+                          </div>
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ) : (
+                      orders.map((order) => (
+                        <tr key={order.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-500">#{order.id.slice(0, 6)}</td>
+                          <td className="px-6 py-4 text-sm text-slate-900 font-medium">{order.serviceName}</td>
+                          <td className="px-6 py-4 text-sm text-blue-600 truncate max-w-[150px]">
+                            <a href={order.link} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                              {order.link}
+                            </a>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-medium">{order.quantity.toLocaleString()}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-bold">{order.totalPrice.toFixed(3)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold
+                              ${order.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' : 
+                                order.status === 'Processing' ? 'bg-blue-100 text-blue-800' : 
+                                order.status === 'Canceled' ? 'bg-red-100 text-red-800' : 
+                                'bg-yellow-100 text-yellow-800'}`}>
+                              {getStatusIcon(order.status)}
+                              <span className="ml-1.5">{order.status}</span>
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>

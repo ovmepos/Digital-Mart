@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, Wallet, LayoutDashboard, Settings, Menu, X, ShoppingBag, Instagram } from 'lucide-react';
+import { LogOut, Wallet, LayoutDashboard, Settings, Menu, X, ShoppingBag, Instagram, ShoppingCart } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const { user, profile, logout } = useAuth();
@@ -34,7 +34,8 @@ const Navbar: React.FC = () => {
                 to="/services" 
                 className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/services') ? 'border-blue-500 text-slate-900' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'}`}
               >
-                Services
+                <ShoppingCart className="w-4 h-4 mr-1.5" />
+                Shop
               </Link>
             </div>
           </div>
@@ -57,10 +58,10 @@ const Navbar: React.FC = () => {
                   <LayoutDashboard className="w-4 h-4 mr-1.5" />
                   Dashboard
                 </Link>
-                <div className="flex items-center bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full text-sm font-semibold border border-emerald-100">
+                <Link to="/wallet" className="flex items-center bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-full text-sm font-semibold border border-emerald-100 transition-colors cursor-pointer">
                   <Wallet className="w-4 h-4 mr-1.5" />
                   {profile.walletBalance.toFixed(3)} OMR
-                </div>
+                </Link>
                 <button
                   onClick={logout}
                   className="text-slate-400 hover:text-red-600 flex items-center p-2 rounded-full hover:bg-red-50 transition-colors"
@@ -101,7 +102,7 @@ const Navbar: React.FC = () => {
               Home
             </Link>
             <Link to="/services" className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/services') ? 'bg-blue-50 border-blue-500 text-blue-700' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800'}`}>
-              Services
+              Shop
             </Link>
             
             {user && profile ? (
@@ -118,10 +119,10 @@ const Navbar: React.FC = () => {
                   </Link>
                 )}
                 <div className="pl-3 pr-4 py-3 flex items-center justify-between border-t border-slate-100 mt-2">
-                  <div className="flex items-center text-emerald-700 font-medium">
+                  <Link to="/wallet" className="flex items-center text-emerald-700 font-medium hover:text-emerald-800">
                     <Wallet className="w-5 h-5 mr-2" />
                     {profile.walletBalance.toFixed(3)} OMR
-                  </div>
+                  </Link>
                   <button onClick={logout} className="text-slate-500 hover:text-red-600 flex items-center">
                     <LogOut className="w-5 h-5 mr-2" /> Logout
                   </button>

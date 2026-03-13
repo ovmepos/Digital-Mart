@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth, db } from '../firebase';
 import { onAuthStateChanged, User, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 interface UserProfile {
   name: string;
@@ -34,13 +34,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const userDocRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userDocRef);
         
+        const isAdminEmail = currentUser.email === 'ovmepos@gmail.com';
+        
         if (userDoc.exists()) {
-          setProfile(userDoc.data() as UserProfile);
+          const data = userDoc.data() as UserProfile;
+          // Auto-upgrade to admin if email matches
+          if (isAdminEmail && data.role !== 'admin') {
+            await updateDoc(userDocRef, { role: 'admin' });
+            data.role = 'admin';
+          }
+          setProfile(data);
         } else {
           const newProfile: UserProfile = {
             name: currentUser.displayName || 'User',
             email: currentUser.email || '',
-            role: 'user',
+            role: isAdminEmail ? 'admin' : 'user',
             walletBalance: 0,
             createdAt: serverTimestamp(),
           };
