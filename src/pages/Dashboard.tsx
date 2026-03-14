@@ -97,6 +97,13 @@ const Dashboard: React.FC = () => {
 
   const getDiscountedPrice = (price: number) => {
     if (!profile?.planId) return price;
+
+    // Check if plan is expired
+    if (profile.planExpiresAt) {
+      const expiry = profile.planExpiresAt.toDate ? profile.planExpiresAt.toDate() : new Date(profile.planExpiresAt);
+      if (expiry < new Date()) return price;
+    }
+
     const plan = plans.find(p => p.id === profile.planId);
     if (!plan || !plan.isActive) return price;
     return price * (1 - plan.discountPercentage / 100);
@@ -179,63 +186,82 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8">
+    <div className="min-h-screen bg-slate-50 py-12 md:py-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Dashboard Header */}
-        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-extrabold text-slate-900">My Dashboard</h1>
-            <p className="text-slate-600 mt-1">Manage your orders and track your digital growth.</p>
+        <div className="mb-12 flex flex-col md:flex-row md:items-end md:justify-between gap-8">
+          <div className="flex-1">
+            <h1 className="text-4xl font-black text-slate-900 mb-3 tracking-tight">My Dashboard</h1>
+            <p className="text-lg text-slate-600">Manage your orders and track your digital growth in real-time.</p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-4">
+          
+          <div className="flex flex-wrap gap-4">
             {profile?.planId && (
-              <div className="flex items-center bg-blue-600 px-4 py-3 rounded-xl shadow-sm border border-blue-500 text-white">
-                <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center mr-3">
-                  <Crown className="w-5 h-5 text-white" />
+              <div className="flex items-center bg-slate-900 px-6 py-4 rounded-3xl shadow-xl shadow-slate-200 border border-slate-800 text-white group hover:scale-105 transition-transform duration-300">
+                <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center mr-4 shadow-lg shadow-blue-500/20 group-hover:rotate-12 transition-transform">
+                  <Crown className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <p className="text-xs text-blue-100 font-medium uppercase tracking-wider">Active Plan</p>
-                  <p className="text-sm font-bold">
+                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-0.5">Active Plan</p>
+                  <p className="text-lg font-bold">
                     {plans.find(p => p.id === profile.planId)?.name || 'Premium'}
                   </p>
-                  {profile.planExpiresAt && (
-                    <p className="text-[10px] text-blue-200">
-                      Expires: {new Date(profile.planExpiresAt.seconds * 1000).toLocaleDateString()}
-                    </p>
-                  )}
+                  {profile.planExpiresAt && (() => {
+                    const expiry = profile.planExpiresAt.toDate ? profile.planExpiresAt.toDate() : new Date(profile.planExpiresAt);
+                    const isExpired = expiry < new Date();
+                    return (
+                      <p className={`text-[10px] font-bold ${isExpired ? 'text-red-400' : 'text-slate-500'}`}>
+                        {isExpired ? 'Expired: ' : 'Expires: '} {expiry.toLocaleDateString()}
+                      </p>
+                    );
+                  })()}
                 </div>
               </div>
             )}
-            <div className="flex items-center bg-white px-4 py-3 rounded-xl shadow-sm border border-slate-200">
-              <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center mr-3">
-                <Wallet className="w-5 h-5 text-emerald-600" />
+            
+            <div className="flex items-center bg-white px-6 py-4 rounded-3xl shadow-xl shadow-slate-200 border border-slate-100 group hover:scale-105 transition-transform duration-300">
+              <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center mr-4 group-hover:rotate-12 transition-transform">
+                <Wallet className="w-6 h-6 text-emerald-600" />
               </div>
               <div>
-                <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Available Balance</p>
-                <p className="text-xl font-bold text-slate-900">{profile?.walletBalance.toFixed(3)} OMR</p>
+                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-0.5">Balance</p>
+                <p className="text-2xl font-black text-slate-900">{profile?.walletBalance.toFixed(3)} <span className="text-xs font-bold text-slate-400">OMR</span></p>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* Quick Order Form */}
-          <div className="lg:col-span-1">
-            <div className="bg-white shadow-sm rounded-2xl p-6 border border-slate-200">
-              <h2 className="text-xl font-bold mb-6 text-slate-900 flex items-center">
-                <ShoppingBag className="w-5 h-5 mr-2 text-blue-600" /> Quick Order
-              </h2>
+          <div className="lg:col-span-4">
+            <div className="bg-white shadow-xl shadow-slate-200 rounded-[2.5rem] p-8 md:p-10 border border-slate-100 sticky top-24">
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center">
+                  <ShoppingBag className="w-6 h-6 mr-3 text-blue-600" /> Quick Order
+                </h2>
+              </div>
               
-              {error && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-xl text-sm border border-red-100">{error}</div>}
-              {success && <div className="mb-4 p-3 bg-emerald-50 text-emerald-700 rounded-xl text-sm border border-emerald-100">{success}</div>}
+              {error && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start">
+                  <XCircle className="w-5 h-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
+                  <p className="text-sm text-red-800 font-bold">{error}</p>
+                </div>
+              )}
+              
+              {success && (
+                <div className="mb-6 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start">
+                  <CheckCircle className="w-5 h-5 text-emerald-500 mt-0.5 mr-3 flex-shrink-0" />
+                  <p className="text-sm text-emerald-800 font-bold">{success}</p>
+                </div>
+              )}
 
-              <form onSubmit={handleOrder}>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
+              <form onSubmit={handleOrder} className="space-y-6">
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Category</label>
                   <select 
-                    className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50"
+                    className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer"
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
                   >
@@ -245,10 +271,10 @@ const Dashboard: React.FC = () => {
                   </select>
                 </div>
 
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Service</label>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Service</label>
                   <select 
-                    className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50"
+                    className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer"
                     value={selectedServiceId}
                     onChange={(e) => {
                       setSelectedServiceId(e.target.value);
@@ -258,129 +284,154 @@ const Dashboard: React.FC = () => {
                   >
                     {filteredServices.map(svc => (
                       <option key={svc.id} value={svc.id}>
-                        {svc.name} - {getDiscountedPrice(svc.pricePer1000).toFixed(3)} OMR / 1k
+                        {svc.name}
                       </option>
                     ))}
                   </select>
                 </div>
 
                 {selectedService && (
-                  <div className="mb-4 p-3 bg-blue-50 text-blue-800 text-sm rounded-xl border border-blue-100">
-                    {selectedService.description}
-                    <div className="mt-2 text-xs font-medium text-blue-600">
-                      Min: {selectedService.minQuantity.toLocaleString()} | Max: {selectedService.maxQuantity.toLocaleString()}
+                  <div className="p-5 bg-blue-50/50 rounded-2xl border border-blue-100/50">
+                    <p className="text-sm text-slate-700 leading-relaxed font-medium mb-3">{selectedService.description}</p>
+                    <div className="flex items-center gap-4">
+                      <div className="px-3 py-1 bg-white rounded-lg text-[10px] font-black text-blue-600 uppercase tracking-wider border border-blue-100">
+                        Min: {selectedService.minQuantity.toLocaleString()}
+                      </div>
+                      <div className="px-3 py-1 bg-white rounded-lg text-[10px] font-black text-blue-600 uppercase tracking-wider border border-blue-100">
+                        Max: {selectedService.maxQuantity.toLocaleString()}
+                      </div>
                     </div>
                   </div>
                 )}
 
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Target Link</label>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Target Link</label>
                   <input 
                     type="url" 
                     required
-                    placeholder="https://..." 
-                    className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50"
+                    placeholder="https://instagram.com/..." 
+                    className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all"
                     value={link}
                     onChange={(e) => setLink(e.target.value)}
                   />
                 </div>
 
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Quantity</label>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Quantity</label>
                   <input 
                     type="number" 
                     required
                     min={selectedService?.minQuantity || 1}
                     max={selectedService?.maxQuantity || 100000}
-                    className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-slate-50"
+                    className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all"
                     value={quantity}
                     onChange={(e) => setQuantity(Number(e.target.value))}
                   />
                 </div>
 
-                <div className="mb-6 p-4 bg-slate-900 rounded-xl flex justify-between items-center shadow-inner">
-                  <span className="text-slate-300 font-medium">Total Charge:</span>
-                  <div className="text-right">
-                    <span className="text-2xl font-bold text-white block">{totalPrice.toFixed(3)} OMR</span>
-                    {totalPrice < basePrice && (
-                      <span className="text-sm text-slate-400 line-through block">{basePrice.toFixed(3)} OMR</span>
-                    )}
+                <div className="p-6 bg-slate-900 rounded-3xl flex justify-between items-center shadow-2xl shadow-slate-200">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Charge</span>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-black text-white">{totalPrice.toFixed(3)}</span>
+                      <span className="text-xs font-bold text-slate-400">OMR</span>
+                    </div>
                   </div>
+                  {totalPrice < basePrice && (
+                    <div className="px-3 py-1 bg-blue-600 rounded-lg text-[10px] font-black text-white uppercase tracking-wider animate-pulse">
+                      Save {(basePrice - totalPrice).toFixed(3)}
+                    </div>
+                  )}
                 </div>
 
                 <button 
                   type="submit" 
                   disabled={loading || !selectedService}
-                  className="w-full bg-blue-600 text-white py-3.5 px-4 rounded-xl font-bold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-colors shadow-lg shadow-blue-600/20"
+                  className="w-full bg-blue-600 text-white py-5 px-8 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500/20 disabled:opacity-50 transition-all shadow-xl shadow-blue-600/20 hover:shadow-blue-600/40 hover:-translate-y-1 active:translate-y-0"
                 >
-                  {loading ? 'Processing...' : 'Place Order'}
+                  {loading ? 'Processing Order...' : 'Place Order Now'}
                 </button>
               </form>
             </div>
           </div>
 
           {/* Order History */}
-          <div className="lg:col-span-2">
-            <div className="bg-white shadow-sm rounded-2xl border border-slate-200 overflow-hidden">
-              <div className="px-6 py-5 border-b border-slate-200 bg-white flex items-center justify-between">
-                <h2 className="text-xl font-bold text-slate-900 flex items-center">
-                  <TrendingUp className="w-5 h-5 mr-2 text-blue-600" /> Order History
+          <div className="lg:col-span-8">
+            <div className="bg-white shadow-xl shadow-slate-200 rounded-[2.5rem] border border-slate-100 overflow-hidden">
+              <div className="px-8 py-8 border-b border-slate-50 flex items-center justify-between bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center">
+                  <TrendingUp className="w-6 h-6 mr-3 text-blue-600" /> Order History
                 </h2>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Live Updates</span>
+                </div>
               </div>
+              
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-slate-200">
-                  <thead className="bg-slate-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">ID</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Service</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Link</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Qty</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Charge</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                <table className="min-w-full divide-y divide-slate-100">
+                  <thead>
+                    <tr className="bg-slate-50/50">
+                      <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">ID</th>
+                      <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Service Details</th>
+                      <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Quantity</th>
+                      <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Charge</th>
+                      <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-slate-100">
+                  <tbody className="divide-y divide-slate-50">
                     {orders.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
-                          <div className="flex flex-col items-center justify-center">
-                            <ShoppingBag className="w-12 h-12 text-slate-300 mb-3" />
-                            <p className="text-lg font-medium text-slate-900">No orders yet</p>
-                            <p className="text-sm">Your order history will appear here.</p>
+                        <td colSpan={5} className="px-8 py-32 text-center">
+                          <div className="flex flex-col items-center justify-center max-w-xs mx-auto">
+                            <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mb-6">
+                              <ShoppingBag className="w-10 h-10 text-slate-200" />
+                            </div>
+                            <p className="text-xl font-black text-slate-900 mb-2">No orders yet</p>
+                            <p className="text-slate-500 text-sm font-medium">Start your digital growth journey by placing your first order today.</p>
                           </div>
                         </td>
                       </tr>
                     ) : (
                       orders.map((order) => (
-                        <tr key={order.id} className="hover:bg-slate-50 transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-500">#{order.id.slice(0, 6)}</td>
-                          <td className="px-6 py-4 text-sm text-slate-900 font-medium">
+                        <tr key={order.id} className="group hover:bg-slate-50/50 transition-colors duration-300">
+                          <td className="px-8 py-6 whitespace-nowrap">
+                            <span className="text-xs font-black text-slate-400 font-mono">#{order.id.slice(0, 8).toUpperCase()}</span>
+                          </td>
+                          <td className="px-8 py-6">
                             <div className="flex items-center">
-                              {services.find(s => s.id === order.serviceId)?.imageUrl ? (
-                                <img src={services.find(s => s.id === order.serviceId)?.imageUrl} alt={order.serviceName} className="w-8 h-8 rounded object-cover mr-3" />
-                              ) : (
-                                <div className="w-8 h-8 rounded bg-slate-100 flex items-center justify-center mr-3">
-                                  <ShoppingBag className="w-4 h-4 text-slate-400" />
-                                </div>
-                              )}
-                              {order.serviceName}
+                              <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mr-4 overflow-hidden border border-slate-200 group-hover:scale-110 transition-transform">
+                                {services.find(s => s.id === order.serviceId)?.imageUrl ? (
+                                  <img src={services.find(s => s.id === order.serviceId)?.imageUrl} alt={order.serviceName} className="w-full h-full object-cover" />
+                                ) : (
+                                  <ShoppingBag className="w-5 h-5 text-slate-400" />
+                                )}
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-sm font-black text-slate-900 truncate mb-1">{order.serviceName}</span>
+                                <a href={order.link} target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold text-blue-600 hover:text-blue-700 truncate max-w-[200px] flex items-center">
+                                  {order.link.replace(/^https?:\/\/(www\.)?/, '')}
+                                </a>
+                              </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-sm text-blue-600 truncate max-w-[150px]">
-                            <a href={order.link} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                              {order.link}
-                            </a>
+                          <td className="px-8 py-6 whitespace-nowrap">
+                            <span className="text-sm font-black text-slate-900">{order.quantity.toLocaleString()}</span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-medium">{order.quantity.toLocaleString()}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-bold">{order.totalPrice.toFixed(3)}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold
-                              ${order.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' : 
-                                order.status === 'Processing' ? 'bg-blue-100 text-blue-800' : 
-                                order.status === 'Canceled' ? 'bg-red-100 text-red-800' : 
-                                'bg-yellow-100 text-yellow-800'}`}>
-                              {getStatusIcon(order.status)}
-                              <span className="ml-1.5">{order.status}</span>
+                          <td className="px-8 py-6 whitespace-nowrap">
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-sm font-black text-slate-900">{order.totalPrice.toFixed(3)}</span>
+                              <span className="text-[10px] font-bold text-slate-400 uppercase">OMR</span>
+                            </div>
+                          </td>
+                          <td className="px-8 py-6 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest
+                              ${order.status === 'Completed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 
+                                order.status === 'Processing' ? 'bg-blue-50 text-blue-600 border border-blue-100' : 
+                                order.status === 'Canceled' ? 'bg-red-50 text-red-600 border border-red-100' : 
+                                'bg-amber-50 text-amber-600 border border-amber-100'}`}>
+                              <span className="mr-2">{getStatusIcon(order.status)}</span>
+                              {order.status}
                             </span>
                           </td>
                         </tr>

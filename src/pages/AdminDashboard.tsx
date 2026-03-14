@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase';
 import { collection, query, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp, runTransaction, setDoc } from 'firebase/firestore';
 import { Navigate } from 'react-router-dom';
-import { Users, ShoppingCart, Settings, PlusCircle, Trash2, CreditCard, Edit2, Image as ImageIcon, Wallet, Crown, Layers, Tag } from 'lucide-react';
+import { Users, ShoppingCart, Settings, PlusCircle, Trash2, CreditCard, Edit2, Image as ImageIcon, Wallet, Crown, Layers, Tag, ShieldCheck, ShoppingBag, List, ArrowRightLeft, Bell, User } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
   const { profile, loading } = useAuth();
@@ -292,7 +292,7 @@ const AdminDashboard: React.FC = () => {
   };
 
   const [newPlan, setNewPlan] = useState({
-    name: '', discountPercentage: 0, price: 0, description: '', isActive: true
+    name: '', discountPercentage: 0, price: 0, description: '', isActive: true, duration: 'monthly'
   });
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
 
@@ -390,8 +390,10 @@ const AdminDashboard: React.FC = () => {
       discountPercentage: plan.discountPercentage,
       price: plan.price,
       description: plan.description,
-      isActive: plan.isActive
+      isActive: plan.isActive,
+      duration: plan.duration || 'monthly'
     });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDeletePlan = async (planId: string) => {
@@ -411,119 +413,153 @@ const AdminDashboard: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Admin Dashboard</h1>
-      
-      <div className="flex space-x-4 mb-6 border-b border-gray-200">
-        <button 
-          onClick={() => setActiveTab('orders')}
-          className={`pb-2 px-4 font-medium flex items-center ${activeTab === 'orders' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          <ShoppingCart className="w-5 h-5 mr-2" /> Orders
-        </button>
-        <button 
-          onClick={() => setActiveTab('users')}
-          className={`pb-2 px-4 font-medium flex items-center ${activeTab === 'users' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          <Users className="w-5 h-5 mr-2" /> Users
-        </button>
-        <button 
-          onClick={() => setActiveTab('services')}
-          className={`pb-2 px-4 font-medium flex items-center ${activeTab === 'services' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          <Settings className="w-5 h-5 mr-2" /> Services
-        </button>
-        <button 
-          onClick={() => setActiveTab('transactions')}
-          className={`pb-2 px-4 font-medium flex items-center ${activeTab === 'transactions' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          <CreditCard className="w-5 h-5 mr-2" /> Pay History
-        </button>
-        <button 
-          onClick={() => setActiveTab('gateways')}
-          className={`pb-2 px-4 font-medium flex items-center ${activeTab === 'gateways' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          <Wallet className="w-5 h-5 mr-2" /> Gateways
-        </button>
-        <button 
-          onClick={() => setActiveTab('plans')}
-          className={`pb-2 px-4 font-medium flex items-center ${activeTab === 'plans' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          <Crown className="w-5 h-5 mr-2" /> Plans
-        </button>
-        <button 
-          onClick={() => setActiveTab('manual_transfers')}
-          className={`pb-2 px-4 font-medium flex items-center ${activeTab === 'manual_transfers' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          <ImageIcon className="w-5 h-5 mr-2" /> Manual Pay
-        </button>
-        <button 
-          onClick={() => setActiveTab('categories')}
-          className={`pb-2 px-4 font-medium flex items-center ${activeTab === 'categories' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          <Layers className="w-5 h-5 mr-2" /> Categories
-        </button>
-        <button 
-          onClick={() => setActiveTab('types')}
-          className={`pb-2 px-4 font-medium flex items-center ${activeTab === 'types' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          <Tag className="w-5 h-5 mr-2" /> Types
-        </button>
+    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
+      {/* Sidebar */}
+      <div className="w-72 bg-slate-900 text-white flex flex-col shadow-2xl z-20">
+        <div className="p-8 border-b border-slate-800">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <ShieldCheck className="w-6 h-6 text-white" />
+            </div>
+            <h1 className="text-xl font-black tracking-tight">Admin <span className="text-blue-500">Panel</span></h1>
+          </div>
+          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">System Management</p>
+        </div>
+        
+        <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1 custom-scrollbar">
+          {[
+            { id: 'orders', icon: ShoppingBag, label: 'Orders' },
+            { id: 'users', icon: Users, label: 'Users' },
+            { id: 'services', icon: List, label: 'Services' },
+            { id: 'categories', icon: Tag, label: 'Categories' },
+            { id: 'types', icon: Layers, label: 'Service Types' },
+            { id: 'transactions', icon: CreditCard, label: 'Transactions' },
+            { id: 'gateways', icon: Wallet, label: 'Payment Gateways' },
+            { id: 'plans', icon: Crown, label: 'Subscription Plans' },
+            { id: 'manual_transfers', icon: ArrowRightLeft, label: 'Manual Transfers' },
+          ].map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id as any)}
+              className={`w-full flex items-center px-4 py-3.5 rounded-2xl text-sm font-black transition-all duration-300 group ${
+                activeTab === item.id 
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
+                  : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              <item.icon className={`w-5 h-5 mr-3 transition-transform group-hover:scale-110 ${activeTab === item.id ? 'text-white' : 'text-slate-500'}`} />
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="p-6 border-t border-slate-800">
+          <div className="bg-slate-800/50 rounded-2xl p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-600/20 flex items-center justify-center">
+              <User className="w-5 h-5 text-blue-500" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-black text-white truncate">Administrator</p>
+              <p className="text-[10px] font-bold text-slate-500 truncate">{profile?.email}</p>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Top Header */}
+        <header className="h-20 bg-white border-b border-slate-100 flex items-center justify-between px-10 flex-shrink-0 z-10">
+          <div className="flex items-center gap-4">
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight capitalize">
+              {activeTab.replace(/([A-Z])/g, ' $1').replace('_', ' ')}
+            </h2>
+            <div className="h-6 w-px bg-slate-100 mx-2"></div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">System Online</span>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-6">
+            <button className="p-2.5 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all">
+              <Bell className="w-5 h-5" />
+            </button>
+            <button className="p-2.5 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all">
+              <Settings className="w-5 h-5" />
+            </button>
+          </div>
+        </header>
+
+        {/* Content Area */}
+        <main className="flex-1 overflow-y-auto p-10 bg-slate-50 custom-scrollbar">
+          <div className="max-w-7xl mx-auto">
 
       {/* Orders Tab */}
       {activeTab === 'orders' && (
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Service</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Link</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+        <div className="bg-white shadow-xl shadow-slate-200 rounded-[2.5rem] border border-slate-100 overflow-hidden">
+          <table className="min-w-full divide-y divide-slate-100">
+            <thead>
+              <tr className="bg-slate-50/50">
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">ID</th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">User</th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Service</th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Link</th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Qty</th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Action</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-slate-50">
               {orders.map(order => (
-                <tr key={order.id}>
-                  <td className="px-6 py-4 text-sm text-gray-500">{order.id.slice(0, 6)}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{order.userId.slice(0, 6)}</td>
-                  <td className="px-6 py-4 text-sm text-gray-900">
+                <tr key={order.id} className="group hover:bg-slate-50/50 transition-colors duration-300">
+                  <td className="px-8 py-6 text-xs font-black text-slate-400 font-mono">#{order.id.slice(0, 6).toUpperCase()}</td>
+                  <td className="px-8 py-6 text-sm font-bold text-slate-600">
+                    {users.find(u => u.id === order.userId)?.email || order.userId.slice(0, 8)}
+                  </td>
+                  <td className="px-8 py-6">
                     <div className="flex items-center">
-                      {services.find(s => s.id === order.serviceId)?.imageUrl ? (
-                        <img src={services.find(s => s.id === order.serviceId)?.imageUrl} alt={order.serviceName} className="w-8 h-8 rounded object-cover mr-2" />
-                      ) : (
-                        <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center mr-2">
-                          <ShoppingCart className="w-4 h-4 text-gray-400" />
-                        </div>
-                      )}
-                      {order.serviceName}
+                      <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center mr-3 overflow-hidden border border-slate-200 group-hover:scale-110 transition-transform">
+                        {services.find(s => s.id === order.serviceId)?.imageUrl ? (
+                          <img src={services.find(s => s.id === order.serviceId)?.imageUrl} alt={order.serviceName} className="w-full h-full object-cover" />
+                        ) : (
+                          <ShoppingCart className="w-4 h-4 text-slate-400" />
+                        )}
+                      </div>
+                      <span className="text-sm font-black text-slate-900">{order.serviceName}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-blue-600 max-w-xs truncate"><a href={order.link} target="_blank" rel="noreferrer">{order.link}</a></td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{order.quantity}</td>
-                  <td className="px-6 py-4 text-sm">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${order.status === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                  <td className="px-8 py-6">
+                    <a href={order.link} target="_blank" rel="noreferrer" className="text-xs font-bold text-blue-600 hover:text-blue-700 truncate max-w-[150px] block">
+                      {order.link.replace(/^https?:\/\/(www\.)?/, '')}
+                    </a>
+                  </td>
+                  <td className="px-8 py-6 text-sm font-black text-slate-900">{order.quantity.toLocaleString()}</td>
+                  <td className="px-8 py-6">
+                    <span className={`inline-flex items-center px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest
+                      ${order.status === 'Completed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 
+                        order.status === 'Processing' ? 'bg-blue-50 text-blue-600 border border-blue-100' : 
+                        order.status === 'Canceled' ? 'bg-red-50 text-red-600 border border-red-100' : 
+                        'bg-amber-50 text-amber-600 border border-amber-100'}`}>
                       {order.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm flex items-center space-x-2">
-                    <select 
-                      value={order.status}
-                      onChange={(e) => updateOrderStatus(order.id, order.status, e.target.value, order.userId, order.totalPrice, order.serviceName)}
-                      className="border rounded p-1 text-sm"
-                    >
-                      <option value="Pending">Pending</option>
-                      <option value="Processing">Processing</option>
-                      <option value="Completed">Completed</option>
-                      <option value="Canceled">Canceled</option>
-                    </select>
-                    <button onClick={() => handleDeleteOrder(order.id)} className="text-red-500 hover:text-red-700 p-1">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                  <td className="px-8 py-6">
+                    <div className="flex items-center gap-2">
+                      <select 
+                        value={order.status}
+                        onChange={(e) => updateOrderStatus(order.id, order.status, e.target.value, order.userId, order.totalPrice, order.serviceName)}
+                        className="px-3 py-1.5 bg-slate-50 border-none rounded-xl text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                      >
+                        <option value="Pending">Pending</option>
+                        <option value="Processing">Processing</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Canceled">Canceled</option>
+                      </select>
+                      <button onClick={() => handleDeleteOrder(order.id)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -534,30 +570,34 @@ const AdminDashboard: React.FC = () => {
 
       {/* Users Tab */}
       {activeTab === 'users' && (
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Plan</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Balance (OMR)</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Add Funds</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+        <div className="bg-white shadow-xl shadow-slate-200 rounded-[2.5rem] border border-slate-100 overflow-hidden">
+          <table className="min-w-full divide-y divide-slate-100">
+            <thead>
+              <tr className="bg-slate-50/50">
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Name</th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Email</th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Role</th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Plan</th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Balance</th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Add Funds</th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Action</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-slate-50">
               {users.map(u => (
-                <tr key={u.id}>
-                  <td className="px-6 py-4 text-sm text-gray-900">{u.name}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{u.email}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{u.role}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
+                <tr key={u.id} className="group hover:bg-slate-50/50 transition-colors duration-300">
+                  <td className="px-8 py-6 text-sm font-black text-slate-900">{u.name}</td>
+                  <td className="px-8 py-6 text-sm font-bold text-slate-500">{u.email}</td>
+                  <td className="px-8 py-6">
+                    <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${u.role === 'admin' ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-600'}`}>
+                      {u.role}
+                    </span>
+                  </td>
+                  <td className="px-8 py-6">
                     <select 
                       value={u.planId || ''}
                       onChange={(e) => updateUserPlan(u.id, e.target.value)}
-                      className="border rounded p-1 text-xs"
+                      className="px-3 py-1.5 bg-slate-50 border-none rounded-xl text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
                     >
                       <option value="">None</option>
                       {plans.map(p => (
@@ -565,14 +605,27 @@ const AdminDashboard: React.FC = () => {
                       ))}
                     </select>
                   </td>
-                  <td className="px-6 py-4 text-sm font-bold text-green-600">{u.walletBalance.toFixed(3)}</td>
-                  <td className="px-6 py-4 text-sm flex space-x-2">
-                    <button onClick={() => updateUserBalance(u.id, u.walletBalance, 1)} className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs hover:bg-green-200">+1</button>
-                    <button onClick={() => updateUserBalance(u.id, u.walletBalance, 5)} className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs hover:bg-green-200">+5</button>
-                    <button onClick={() => updateUserBalance(u.id, u.walletBalance, 10)} className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs hover:bg-green-200">+10</button>
+                  <td className="px-8 py-6">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-sm font-black text-emerald-600">{u.walletBalance.toFixed(3)}</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">OMR</span>
+                    </div>
                   </td>
-                  <td className="px-6 py-4 text-sm">
-                    <button onClick={() => handleDeleteUser(u.id)} className="text-red-500 hover:text-red-700 p-1">
+                  <td className="px-8 py-6">
+                    <div className="flex items-center gap-2">
+                      {[1, 5, 10].map(amount => (
+                        <button 
+                          key={amount}
+                          onClick={() => updateUserBalance(u.id, u.walletBalance, amount)} 
+                          className="px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-black hover:bg-emerald-100 transition-colors"
+                        >
+                          +{amount}
+                        </button>
+                      ))}
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <button onClick={() => handleDeleteUser(u.id)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </td>
@@ -585,151 +638,164 @@ const AdminDashboard: React.FC = () => {
 
       {/* Services Tab */}
       {activeTab === 'services' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1 bg-white shadow rounded-lg p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold flex items-center">
-                {editingServiceId ? <Edit2 className="w-5 h-5 mr-2" /> : <PlusCircle className="w-5 h-5 mr-2" />} 
-                {editingServiceId ? 'Edit Service' : 'Add Service'}
-              </h3>
-              {editingServiceId && (
-                <button 
-                  onClick={() => {
-                    setEditingServiceId(null);
-                    setNewService({ name: '', category: '', pricePer1000: 0, minQuantity: 100, maxQuantity: 10000, description: '', averageTime: '', features: '', type: 'Service', isActive: true, imageUrl: '' });
-                  }}
-                  className="text-xs text-gray-500 hover:text-gray-700"
-                >
-                  Cancel
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-4">
+            <div className="bg-white shadow-xl shadow-slate-200 rounded-[2.5rem] p-8 border border-slate-100 sticky top-24">
+              <div className="flex justify-between items-center mb-8">
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight flex items-center">
+                  {editingServiceId ? <Edit2 className="w-6 h-6 mr-3 text-blue-600" /> : <PlusCircle className="w-6 h-6 mr-3 text-blue-600" />} 
+                  {editingServiceId ? 'Edit Service' : 'Add Service'}
+                </h3>
+                {editingServiceId && (
+                  <button 
+                    onClick={() => {
+                      setEditingServiceId(null);
+                      setNewService({ name: '', category: '', pricePer1000: 0, minQuantity: 100, maxQuantity: 10000, description: '', averageTime: '', features: '', type: 'Service', isActive: true, imageUrl: '' });
+                    }}
+                    className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+              <form onSubmit={handleAddService} className="space-y-6">
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Name</label>
+                  <input type="text" required value={newService.name} onChange={e => setNewService({...newService, name: e.target.value})} className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Category</label>
+                    <select 
+                      required 
+                      value={newService.category} 
+                      onChange={e => setNewService({...newService, category: e.target.value})} 
+                      className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer"
+                    >
+                      <option value="">Select</option>
+                      {categories.map(cat => (
+                        <option key={cat.id} value={cat.name}>{cat.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Type</label>
+                    <select 
+                      required 
+                      value={newService.type} 
+                      onChange={e => setNewService({...newService, type: e.target.value})} 
+                      className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer"
+                    >
+                      <option value="">Select</option>
+                      {serviceTypes.map(t => (
+                        <option key={t.id} value={t.name}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Image URL</label>
+                  <div className="flex items-center gap-4">
+                    {newService.imageUrl && (
+                      <img src={newService.imageUrl} alt="Preview" className="w-14 h-14 object-cover rounded-2xl border border-slate-200 shadow-sm" />
+                    )}
+                    <input 
+                      type="url" 
+                      placeholder="https://..."
+                      value={newService.imageUrl} 
+                      onChange={e => setNewService({...newService, imageUrl: e.target.value})} 
+                      className="flex-1 px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Price/1k</label>
+                    <input type="number" step="0.001" required value={newService.pricePer1000} onChange={e => setNewService({...newService, pricePer1000: Number(e.target.value)})} className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Avg Time</label>
+                    <input type="text" value={newService.averageTime} onChange={e => setNewService({...newService, averageTime: e.target.value})} className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all" placeholder="e.g. 1-2 hours" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Min Qty</label>
+                    <input type="number" required value={newService.minQuantity} onChange={e => setNewService({...newService, minQuantity: Number(e.target.value)})} className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Max Qty</label>
+                    <input type="number" required value={newService.maxQuantity} onChange={e => setNewService({...newService, maxQuantity: Number(e.target.value)})} className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Description</label>
+                  <textarea required value={newService.description} onChange={e => setNewService({...newService, description: e.target.value})} className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all" rows={3}></textarea>
+                </div>
+                <button type="submit" className="w-full bg-blue-600 text-white py-5 px-8 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/20">
+                  {editingServiceId ? 'Update Service' : 'Create Service'}
                 </button>
-              )}
+              </form>
             </div>
-            <form onSubmit={handleAddService} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-700">Name</label>
-                <input type="text" required value={newService.name} onChange={e => setNewService({...newService, name: e.target.value})} className="w-full border p-2 rounded text-sm" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700">Category</label>
-                  <select 
-                    required 
-                    value={newService.category} 
-                    onChange={e => setNewService({...newService, category: e.target.value})} 
-                    className="w-full border p-2 rounded text-sm"
-                  >
-                    <option value="">Select Category</option>
-                    {categories.map(cat => (
-                      <option key={cat.id} value={cat.name}>{cat.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700">Type</label>
-                  <select 
-                    required 
-                    value={newService.type} 
-                    onChange={e => setNewService({...newService, type: e.target.value})} 
-                    className="w-full border p-2 rounded text-sm"
-                  >
-                    <option value="">Select Type</option>
-                    {serviceTypes.map(t => (
-                      <option key={t.id} value={t.name}>{t.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Image (Optional)</label>
-                <div className="flex items-center space-x-4">
-                  {newService.imageUrl && (
-                    <img src={newService.imageUrl} alt="Preview" className="w-12 h-12 object-cover rounded border" />
-                  )}
-                  <label className="flex-1 cursor-pointer bg-gray-50 border border-gray-300 border-dashed rounded-md p-2 flex items-center justify-center hover:bg-gray-100">
-                    <ImageIcon className="w-4 h-4 text-gray-400 mr-2" />
-                    <span className="text-xs text-gray-500">Upload Image</span>
-                    <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                  </label>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700">Price/1000</label>
-                  <input type="number" step="0.001" required value={newService.pricePer1000} onChange={e => setNewService({...newService, pricePer1000: Number(e.target.value)})} className="w-full border p-2 rounded text-sm" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700">Average Time</label>
-                  <input type="text" value={newService.averageTime} onChange={e => setNewService({...newService, averageTime: e.target.value})} className="w-full border p-2 rounded text-sm" placeholder="e.g., 1-2 hours" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700">Min Qty</label>
-                  <input type="number" required value={newService.minQuantity} onChange={e => setNewService({...newService, minQuantity: Number(e.target.value)})} className="w-full border p-2 rounded text-sm" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700">Max Qty</label>
-                  <input type="number" required value={newService.maxQuantity} onChange={e => setNewService({...newService, maxQuantity: Number(e.target.value)})} className="w-full border p-2 rounded text-sm" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700">Features (comma separated)</label>
-                <input type="text" value={newService.features} onChange={e => setNewService({...newService, features: e.target.value})} className="w-full border p-2 rounded text-sm" placeholder="e.g., High Quality, Fast Delivery" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700">Description</label>
-                <textarea required value={newService.description} onChange={e => setNewService({...newService, description: e.target.value})} className="w-full border p-2 rounded text-sm" rows={2}></textarea>
-              </div>
-              <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded text-sm font-medium hover:bg-blue-700">
-                {editingServiceId ? 'Update Service' : 'Create Service'}
-              </button>
-            </form>
           </div>
 
-          <div className="lg:col-span-2 bg-white shadow rounded-lg overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Image</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price/1k</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+          <div className="lg:col-span-8 bg-white shadow-xl shadow-slate-200 rounded-[2.5rem] border border-slate-100 overflow-hidden">
+            <table className="min-w-full divide-y divide-slate-100">
+              <thead>
+                <tr className="bg-slate-50/50">
+                  <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Service</th>
+                  <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Category</th>
+                  <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Type</th>
+                  <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Price/1k</th>
+                  <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                  <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Action</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-slate-50">
                 {services.map(s => (
-                  <tr key={s.id}>
-                    <td className="px-6 py-4 text-sm">
-                      {s.imageUrl ? (
-                        <img src={s.imageUrl} alt={s.name} className="w-10 h-10 rounded object-cover" />
-                      ) : (
-                        <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center text-gray-400">
-                          <ImageIcon className="w-5 h-5" />
+                  <tr key={s.id} className="group hover:bg-slate-50/50 transition-colors duration-300">
+                    <td className="px-8 py-6">
+                      <div className="flex items-center">
+                        <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mr-4 overflow-hidden border border-slate-200 group-hover:scale-110 transition-transform">
+                          {s.imageUrl ? (
+                            <img src={s.imageUrl} alt={s.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <ImageIcon className="w-5 h-5 text-slate-400" />
+                          )}
                         </div>
-                      )}
+                        <span className="text-sm font-black text-slate-900">{s.name}</span>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{s.name}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{s.category}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{s.type || 'Service'}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-blue-600">{s.pricePer1000} OMR</td>
-                    <td className="px-6 py-4 text-sm">
+                    <td className="px-8 py-6 text-sm font-bold text-slate-500">{s.category}</td>
+                    <td className="px-8 py-6">
+                      <span className="px-3 py-1 bg-slate-50 text-slate-600 rounded-lg text-[10px] font-black uppercase tracking-widest">
+                        {s.type || 'Service'}
+                      </span>
+                    </td>
+                    <td className="px-8 py-6">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-sm font-black text-blue-600">{s.pricePer1000.toFixed(3)}</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">OMR</span>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6">
                       <button 
                         onClick={() => toggleServiceStatus(s.id, s.isActive)}
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${s.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all
+                          ${s.isActive ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'}`}
                       >
                         {s.isActive ? 'Active' : 'Disabled'}
                       </button>
                     </td>
-                    <td className="px-6 py-4 text-sm flex space-x-2">
-                      <button onClick={() => handleEditService(s)} className="text-blue-500 hover:text-blue-700 p-1">
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => handleDeleteService(s.id)} className="text-red-500 hover:text-red-700 p-1">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                    <td className="px-8 py-6">
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => handleEditService(s)} className="p-2 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDeleteService(s.id)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -741,38 +807,40 @@ const AdminDashboard: React.FC = () => {
 
       {/* Transactions Tab */}
       {activeTab === 'transactions' && (
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount (OMR)</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+        <div className="bg-white shadow-xl shadow-slate-200 rounded-[2.5rem] border border-slate-100 overflow-hidden">
+          <table className="min-w-full divide-y divide-slate-100">
+            <thead>
+              <tr className="bg-slate-50/50">
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">ID</th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">User</th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount</th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Type</th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Description</th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-slate-50">
               {transactions.sort((a, b) => b.createdAt?.toMillis() - a.createdAt?.toMillis()).map(t => (
-                <tr key={t.id}>
-                  <td className="px-6 py-4 text-sm text-gray-500">{t.id.slice(0, 6)}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{t.userId.slice(0, 6)}</td>
-                  <td className={`px-6 py-4 text-sm font-bold ${t.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {t.amount > 0 ? '+' : ''}{t.amount.toFixed(3)}
+                <tr key={t.id} className="group hover:bg-slate-50/50 transition-colors duration-300">
+                  <td className="px-8 py-6 text-xs font-black text-slate-400 font-mono">#{t.id.slice(0, 6).toUpperCase()}</td>
+                  <td className="px-8 py-6 text-sm font-bold text-slate-600">
+                    {users.find(u => u.id === t.userId)?.email || t.userId.slice(0, 8)}
                   </td>
-                  <td className="px-6 py-4 text-sm">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      t.type === 'topup' ? 'bg-green-100 text-green-800' : 
-                      t.type === 'order' ? 'bg-blue-100 text-blue-800' : 
-                      t.type === 'refund' ? 'bg-purple-100 text-purple-800' : 
-                      'bg-gray-100 text-gray-800'
+                  <td className={`px-8 py-6 text-sm font-black ${t.amount > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                    {t.amount > 0 ? '+' : ''}{t.amount.toFixed(3)} OMR
+                  </td>
+                  <td className="px-8 py-6">
+                    <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${
+                      t.type === 'topup' ? 'bg-emerald-50 text-emerald-600' : 
+                      t.type === 'order' ? 'bg-blue-50 text-blue-600' : 
+                      t.type === 'refund' ? 'bg-purple-50 text-purple-600' : 
+                      'bg-slate-50 text-slate-600'
                     }`}>
                       {t.type}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{t.description}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
+                  <td className="px-8 py-6 text-sm font-bold text-slate-500">{t.description}</td>
+                  <td className="px-8 py-6 text-xs font-bold text-slate-400">
                     {t.createdAt?.toDate().toLocaleString()}
                   </td>
                 </tr>
@@ -784,11 +852,11 @@ const AdminDashboard: React.FC = () => {
 
       {/* Gateways Tab */}
       {activeTab === 'gateways' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* PayPal Settings */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-bold mb-4 flex items-center">
-              <Wallet className="w-5 h-5 mr-2 text-blue-600" /> PayPal
+          <div className="bg-white shadow-xl shadow-slate-200 rounded-[2.5rem] p-8 border border-slate-100">
+            <h3 className="text-xl font-black text-slate-900 tracking-tight flex items-center mb-8">
+              <Wallet className="w-6 h-6 mr-3 text-blue-600" /> PayPal
             </h3>
             <form onSubmit={(e) => {
               e.preventDefault();
@@ -802,34 +870,34 @@ const AdminDashboard: React.FC = () => {
                   mode: formData.get('mode')
                 }
               });
-            }} className="space-y-4">
+            }} className="space-y-6">
               {(() => {
                 const gw = gateways.find(g => g.id === 'paypal') || { isActive: false, config: { clientId: '', secret: '', mode: 'sandbox' } };
                 return (
                   <>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700">Status</label>
-                      <select name="isActive" defaultValue={gw.isActive ? 'true' : 'false'} className="w-full border p-2 rounded text-sm">
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Status</label>
+                      <select name="isActive" defaultValue={gw.isActive ? 'true' : 'false'} className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer">
                         <option value="true">Active</option>
                         <option value="false">Disabled</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700">Client ID</label>
-                      <input type="text" name="clientId" defaultValue={gw.config.clientId} className="w-full border p-2 rounded text-sm" />
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Client ID</label>
+                      <input type="text" name="clientId" defaultValue={gw.config.clientId} className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700">Secret</label>
-                      <input type="password" name="secret" defaultValue={gw.config.secret} className="w-full border p-2 rounded text-sm" />
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Secret</label>
+                      <input type="password" name="secret" defaultValue={gw.config.secret} className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700">Mode</label>
-                      <select name="mode" defaultValue={gw.config.mode} className="w-full border p-2 rounded text-sm">
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Mode</label>
+                      <select name="mode" defaultValue={gw.config.mode} className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer">
                         <option value="sandbox">Sandbox</option>
                         <option value="live">Live</option>
                       </select>
                     </div>
-                    <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded text-sm font-medium hover:bg-blue-700">
+                    <button type="submit" className="w-full bg-blue-600 text-white py-5 px-8 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/20">
                       Save PayPal Settings
                     </button>
                   </>
@@ -839,9 +907,9 @@ const AdminDashboard: React.FC = () => {
           </div>
 
           {/* Thawani Settings */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-bold mb-4 flex items-center">
-              <CreditCard className="w-5 h-5 mr-2 text-emerald-600" /> Thawani
+          <div className="bg-white shadow-xl shadow-slate-200 rounded-[2.5rem] p-8 border border-slate-100">
+            <h3 className="text-xl font-black text-slate-900 tracking-tight flex items-center mb-8">
+              <CreditCard className="w-6 h-6 mr-3 text-emerald-600" /> Thawani
             </h3>
             <form onSubmit={(e) => {
               e.preventDefault();
@@ -855,34 +923,34 @@ const AdminDashboard: React.FC = () => {
                   mode: formData.get('mode')
                 }
               });
-            }} className="space-y-4">
+            }} className="space-y-6">
               {(() => {
                 const gw = gateways.find(g => g.id === 'thawani') || { isActive: false, config: { publishableKey: '', secretKey: '', mode: 'test' } };
                 return (
                   <>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700">Status</label>
-                      <select name="isActive" defaultValue={gw.isActive ? 'true' : 'false'} className="w-full border p-2 rounded text-sm">
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Status</label>
+                      <select name="isActive" defaultValue={gw.isActive ? 'true' : 'false'} className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer">
                         <option value="true">Active</option>
                         <option value="false">Disabled</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700">Publishable Key</label>
-                      <input type="text" name="publishableKey" defaultValue={gw.config.publishableKey} className="w-full border p-2 rounded text-sm" />
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Publishable Key</label>
+                      <input type="text" name="publishableKey" defaultValue={gw.config.publishableKey} className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700">Secret Key</label>
-                      <input type="password" name="secretKey" defaultValue={gw.config.secretKey} className="w-full border p-2 rounded text-sm" />
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Secret Key</label>
+                      <input type="password" name="secretKey" defaultValue={gw.config.secretKey} className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700">Mode</label>
-                      <select name="mode" defaultValue={gw.config.mode} className="w-full border p-2 rounded text-sm">
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Mode</label>
+                      <select name="mode" defaultValue={gw.config.mode} className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer">
                         <option value="test">Test</option>
                         <option value="live">Live</option>
                       </select>
                     </div>
-                    <button type="submit" className="w-full bg-emerald-600 text-white py-2 rounded text-sm font-medium hover:bg-emerald-700">
+                    <button type="submit" className="w-full bg-emerald-600 text-white py-5 px-8 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-600/20">
                       Save Thawani Settings
                     </button>
                   </>
@@ -892,9 +960,9 @@ const AdminDashboard: React.FC = () => {
           </div>
 
           {/* Manual Transfer Settings */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-bold mb-4 flex items-center">
-              <Settings className="w-5 h-5 mr-2 text-purple-600" /> Manual Transfer
+          <div className="bg-white shadow-xl shadow-slate-200 rounded-[2.5rem] p-8 border border-slate-100">
+            <h3 className="text-xl font-black text-slate-900 tracking-tight flex items-center mb-8">
+              <Settings className="w-6 h-6 mr-3 text-purple-600" /> Manual Transfer
             </h3>
             <form onSubmit={(e) => {
               e.preventDefault();
@@ -909,39 +977,39 @@ const AdminDashboard: React.FC = () => {
                   instructions: formData.get('instructions')
                 }
               });
-            }} className="space-y-4">
+            }} className="space-y-6">
               {(() => {
                 const gw = gateways.find(g => g.id === 'manual') || { isActive: false, config: { bankDetails: '', upiId: '', whatsappNumber: '', instructions: '' } };
                 return (
                   <>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700">Status</label>
-                      <select name="isActive" defaultValue={gw.isActive ? 'true' : 'false'} className="w-full border p-2 rounded text-sm">
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Status</label>
+                      <select name="isActive" defaultValue={gw.isActive ? 'true' : 'false'} className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer">
                         <option value="true">Active</option>
                         <option value="false">Disabled</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700">Bank Details</label>
-                      <textarea name="bankDetails" defaultValue={gw.config.bankDetails} className="w-full border p-2 rounded text-sm" rows={2} placeholder="Bank Name, Account No, IFSC..."></textarea>
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Bank Details</label>
+                      <textarea name="bankDetails" defaultValue={gw.config.bankDetails} className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all" rows={2} placeholder="Bank Name, Account No, IFSC..."></textarea>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700">UPI ID</label>
-                      <input type="text" name="upiId" defaultValue={gw.config.upiId} className="w-full border p-2 rounded text-sm" placeholder="example@upi" />
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">UPI ID</label>
+                      <input type="text" name="upiId" defaultValue={gw.config.upiId} className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all" placeholder="example@upi" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700">WhatsApp Number (with country code)</label>
-                      <input type="text" name="whatsappNumber" defaultValue={gw.config.whatsappNumber} className="w-full border p-2 rounded text-sm" placeholder="e.g., 96812345678" />
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">WhatsApp Number</label>
+                      <input type="text" name="whatsappNumber" defaultValue={gw.config.whatsappNumber} className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all" placeholder="e.g., 96812345678" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">QR Code Image</label>
-                      <div className="flex items-center space-x-4">
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">QR Code Image</label>
+                      <div className="flex items-center gap-4">
                         {gw.config.qrCodeUrl && (
-                          <img src={gw.config.qrCodeUrl} alt="QR Code" className="w-12 h-12 object-cover rounded border" />
+                          <img src={gw.config.qrCodeUrl} alt="QR Code" className="w-14 h-14 object-cover rounded-2xl border border-slate-200 shadow-sm" />
                         )}
-                        <label className="flex-1 cursor-pointer bg-gray-50 border border-gray-300 border-dashed rounded-md p-2 flex items-center justify-center hover:bg-gray-100">
-                          <ImageIcon className="w-4 h-4 text-gray-400 mr-2" />
-                          <span className="text-xs text-gray-500">Upload QR</span>
+                        <label className="flex-1 cursor-pointer bg-slate-50 border-2 border-slate-200 border-dashed rounded-2xl p-4 flex items-center justify-center hover:bg-slate-100 transition-colors group">
+                          <ImageIcon className="w-5 h-5 text-slate-400 mr-2 group-hover:scale-110 transition-transform" />
+                          <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Upload QR</span>
                           <input 
                             type="file" 
                             accept="image/*" 
@@ -978,10 +1046,10 @@ const AdminDashboard: React.FC = () => {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700">Instructions</label>
-                      <textarea name="instructions" defaultValue={gw.config.instructions} className="w-full border p-2 rounded text-sm" rows={2} placeholder="Transfer funds and contact on WhatsApp..."></textarea>
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Instructions</label>
+                      <textarea name="instructions" defaultValue={gw.config.instructions} className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all" rows={2} placeholder="Transfer funds and contact on WhatsApp..."></textarea>
                     </div>
-                    <button type="submit" className="w-full bg-purple-600 text-white py-2 rounded text-sm font-medium hover:bg-purple-700">
+                    <button type="submit" className="w-full bg-purple-600 text-white py-5 px-8 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-purple-700 transition-all shadow-xl shadow-purple-600/20">
                       Save Manual Settings
                     </button>
                   </>
@@ -993,80 +1061,116 @@ const AdminDashboard: React.FC = () => {
       )}
       {/* Plans Tab */}
       {activeTab === 'plans' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1 bg-white shadow rounded-lg p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold flex items-center">
-                {editingPlanId ? <Edit2 className="w-5 h-5 mr-2" /> : <PlusCircle className="w-5 h-5 mr-2" />} 
-                {editingPlanId ? 'Edit Plan' : 'Add Plan'}
-              </h3>
-              {editingPlanId && (
-                <button 
-                  onClick={() => {
-                    setEditingPlanId(null);
-                    setNewPlan({ name: '', discountPercentage: 0, price: 0, description: '', isActive: true });
-                  }}
-                  className="text-xs text-gray-500 hover:text-gray-700"
-                >
-                  Cancel
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-4">
+            <div className="bg-white shadow-xl shadow-slate-200 rounded-[2.5rem] p-8 border border-slate-100 sticky top-24">
+              <div className="flex justify-between items-center mb-8">
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight flex items-center">
+                  {editingPlanId ? <Edit2 className="w-6 h-6 mr-3 text-blue-600" /> : <PlusCircle className="w-6 h-6 mr-3 text-blue-600" />} 
+                  {editingPlanId ? 'Edit Plan' : 'Add Plan'}
+                </h3>
+                {editingPlanId && (
+                  <button 
+                    onClick={() => {
+                      setEditingPlanId(null);
+                      setNewPlan({ name: '', discountPercentage: 0, price: 0, description: '', isActive: true, duration: 'monthly' });
+                    }}
+                    className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+              <form onSubmit={editingPlanId ? handleUpdatePlan : handleAddPlan} className="space-y-6">
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Plan Name</label>
+                  <input type="text" placeholder="e.g., Pro, VIP" value={newPlan.name} onChange={e => setNewPlan({...newPlan, name: e.target.value})} className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all" required />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Discount %</label>
+                    <input type="number" value={newPlan.discountPercentage} onChange={e => setNewPlan({...newPlan, discountPercentage: Number(e.target.value)})} className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all" required min="0" max="100" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Price (OMR)</label>
+                    <input type="number" value={newPlan.price} onChange={e => setNewPlan({...newPlan, price: Number(e.target.value)})} className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all" required min="0" step="0.001" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Duration</label>
+                  <select 
+                    value={newPlan.duration} 
+                    onChange={e => setNewPlan({...newPlan, duration: e.target.value})} 
+                    className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all"
+                    required
+                  >
+                    <option value="monthly">Monthly</option>
+                    <option value="yearly">Yearly</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Description</label>
+                  <textarea value={newPlan.description} onChange={e => setNewPlan({...newPlan, description: e.target.value})} className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all" rows={3}></textarea>
+                </div>
+                <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl">
+                  <input type="checkbox" checked={newPlan.isActive} onChange={e => setNewPlan({...newPlan, isActive: e.target.checked})} className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500/20" id="planActive" />
+                  <label htmlFor="planActive" className="text-sm font-bold text-slate-700">Active Plan</label>
+                </div>
+                <button type="submit" className="w-full bg-blue-600 text-white py-5 px-8 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/20">
+                  {editingPlanId ? 'Update Plan' : 'Create Plan'}
                 </button>
-              )}
+              </form>
             </div>
-            <form onSubmit={editingPlanId ? handleUpdatePlan : handleAddPlan} className="space-y-4">
-              <input type="text" placeholder="Plan Name (e.g., Pro, VIP)" value={newPlan.name} onChange={e => setNewPlan({...newPlan, name: e.target.value})} className="w-full border p-2 rounded text-sm" required />
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Discount %</label>
-                  <input type="number" placeholder="Discount %" value={newPlan.discountPercentage} onChange={e => setNewPlan({...newPlan, discountPercentage: Number(e.target.value)})} className="w-full border p-2 rounded text-sm" required min="0" max="100" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Price (OMR)</label>
-                  <input type="number" placeholder="Price" value={newPlan.price} onChange={e => setNewPlan({...newPlan, price: Number(e.target.value)})} className="w-full border p-2 rounded text-sm" required min="0" step="0.001" />
-                </div>
-              </div>
-              <textarea placeholder="Description" value={newPlan.description} onChange={e => setNewPlan({...newPlan, description: e.target.value})} className="w-full border p-2 rounded text-sm" rows={3}></textarea>
-              <div className="flex items-center">
-                <input type="checkbox" checked={newPlan.isActive} onChange={e => setNewPlan({...newPlan, isActive: e.target.checked})} className="mr-2" id="planActive" />
-                <label htmlFor="planActive" className="text-sm">Active</label>
-              </div>
-              <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded text-sm font-medium hover:bg-blue-700">
-                {editingPlanId ? 'Update Plan' : 'Add Plan'}
-              </button>
-            </form>
           </div>
           
-          <div className="lg:col-span-2 bg-white shadow rounded-lg overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Discount</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+          <div className="lg:col-span-8 bg-white shadow-xl shadow-slate-200 rounded-[2.5rem] border border-slate-100 overflow-hidden">
+            <table className="min-w-full divide-y divide-slate-100">
+              <thead>
+                <tr className="bg-slate-50/50">
+                  <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Name</th>
+                  <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Discount</th>
+                  <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Price</th>
+                  <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Duration</th>
+                  <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                  <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Action</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-slate-50">
                 {plans.map(p => (
-                  <tr key={p.id}>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{p.name}</td>
-                    <td className="px-6 py-4 text-sm text-green-600 font-bold">{p.discountPercentage}%</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{p.price} OMR</td>
-                    <td className="px-6 py-4 text-sm">
+                  <tr key={p.id} className="group hover:bg-slate-50/50 transition-colors duration-300">
+                    <td className="px-8 py-6 text-sm font-black text-slate-900">{p.name}</td>
+                    <td className="px-8 py-6">
+                      <span className="text-sm font-black text-emerald-600">{p.discountPercentage}% OFF</span>
+                    </td>
+                    <td className="px-8 py-6">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-sm font-black text-slate-900">{p.price.toFixed(3)}</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">OMR</span>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6">
+                      <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-black uppercase tracking-widest">
+                        {p.duration}
+                      </span>
+                    </td>
+                    <td className="px-8 py-6">
                       <button 
                         onClick={() => togglePlanStatus(p.id, p.isActive)}
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${p.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all
+                          ${p.isActive ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'}`}
                       >
                         {p.isActive ? 'Active' : 'Disabled'}
                       </button>
                     </td>
-                    <td className="px-6 py-4 text-sm flex space-x-2">
-                      <button onClick={() => handleEditPlan(p)} className="text-blue-500 hover:text-blue-700 p-1">
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => handleDeletePlan(p.id)} className="text-red-500 hover:text-red-700 p-1">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                    <td className="px-8 py-6">
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => handleEditPlan(p)} className="p-2 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDeletePlan(p.id)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -1077,64 +1181,75 @@ const AdminDashboard: React.FC = () => {
       )}
       {/* Manual Transfers Tab */}
       {activeTab === 'manual_transfers' && (
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Proof</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+        <div className="bg-white shadow-xl shadow-slate-200 rounded-[2.5rem] border border-slate-100 overflow-hidden">
+          <table className="min-w-full divide-y divide-slate-100">
+            <thead>
+              <tr className="bg-slate-50/50">
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">User</th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount</th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Proof</th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Action</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-slate-50">
               {manualTransfers.sort((a, b) => b.createdAt?.toMillis() - a.createdAt?.toMillis()).map(t => (
-                <tr key={t.id}>
-                  <td className="px-6 py-4 text-sm text-gray-900">
-                    {users.find(u => u.id === t.userId)?.name || t.userId.slice(0, 6)}
+                <tr key={t.id} className="group hover:bg-slate-50/50 transition-colors duration-300">
+                  <td className="px-8 py-6">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-black text-slate-900">{users.find(u => u.id === t.userId)?.name || 'Unknown'}</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">{users.find(u => u.id === t.userId)?.email}</span>
+                    </div>
                   </td>
-                  <td className="px-6 py-4 text-sm font-bold text-gray-900">{t.amount.toFixed(3)} OMR</td>
-                  <td className="px-6 py-4 text-sm">
+                  <td className="px-8 py-6">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-sm font-black text-slate-900">{t.amount.toFixed(3)}</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">OMR</span>
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
                     {t.proofUrl ? (
-                      <a href={t.proofUrl} target="_blank" rel="noreferrer">
-                        <img src={t.proofUrl} alt="Proof" className="w-12 h-12 object-cover rounded border hover:scale-150 transition-transform" />
+                      <a href={t.proofUrl} target="_blank" rel="noreferrer" className="block w-12 h-12 rounded-xl overflow-hidden border border-slate-200 shadow-sm hover:scale-110 transition-transform">
+                        <img src={t.proofUrl} alt="Proof" className="w-full h-full object-cover" />
                       </a>
-                    ) : 'No Proof'}
+                    ) : (
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No Proof</span>
+                    )}
                   </td>
-                  <td className="px-6 py-4 text-sm">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      t.status === 'approved' ? 'bg-green-100 text-green-800' : 
-                      t.status === 'rejected' ? 'bg-red-100 text-red-800' : 
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
+                  <td className="px-8 py-6">
+                    <span className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest
+                      ${t.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 
+                        t.status === 'rejected' ? 'bg-red-50 text-red-600 border border-red-100' : 
+                        'bg-amber-50 text-amber-600 border border-amber-100'}`}>
                       {t.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
+                  <td className="px-8 py-6 text-xs font-bold text-slate-400">
                     {t.createdAt?.toDate().toLocaleString()}
                   </td>
-                  <td className="px-6 py-4 text-sm flex space-x-2">
-                    {t.status === 'pending' && (
-                      <>
-                        <button 
-                          onClick={() => handleApproveManualTransfer(t)}
-                          className="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700"
-                        >
-                          Approve
-                        </button>
-                        <button 
-                          onClick={() => {
-                            const notes = prompt('Enter rejection reason:');
-                            if (notes) handleRejectManualTransfer(t.id, notes);
-                          }}
-                          className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700"
-                        >
-                          Reject
-                        </button>
-                      </>
-                    )}
+                  <td className="px-8 py-6">
+                    <div className="flex items-center gap-2">
+                      {t.status === 'pending' && (
+                        <>
+                          <button 
+                            onClick={() => handleApproveManualTransfer(t)}
+                            className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
+                          >
+                            Approve
+                          </button>
+                          <button 
+                            onClick={() => {
+                              const notes = prompt('Enter rejection reason:');
+                              if (notes) handleRejectManualTransfer(t.id, notes);
+                            }}
+                            className="px-4 py-2 bg-red-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-lg shadow-red-600/20"
+                          >
+                            Reject
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -1145,71 +1260,80 @@ const AdminDashboard: React.FC = () => {
 
       {/* Categories Tab */}
       {activeTab === 'categories' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1 bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-bold mb-4 flex items-center">
-              {editingCategoryId ? <Edit2 className="w-5 h-5 mr-2" /> : <PlusCircle className="w-5 h-5 mr-2" />}
-              {editingCategoryId ? 'Edit Category' : 'Add Category'}
-            </h3>
-            <form onSubmit={handleCategorySubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-700">Name</label>
-                <input type="text" required value={newCategory.name} onChange={e => setNewCategory({...newCategory, name: e.target.value})} className="w-full border p-2 rounded text-sm" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700">Logo / Image</label>
-                <input type="file" accept="image/*" onChange={handleCategoryImageUpload} className="w-full text-xs" />
-                {newCategory.imageUrl && (
-                  <img src={newCategory.imageUrl} alt="Preview" className="mt-2 w-16 h-16 object-cover rounded border" />
-                )}
-              </div>
-              <div className="flex items-center">
-                <input type="checkbox" checked={newCategory.isActive} onChange={e => setNewCategory({...newCategory, isActive: e.target.checked})} className="mr-2" id="catActive" />
-                <label htmlFor="catActive" className="text-sm">Active</label>
-              </div>
-              <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded text-sm font-medium hover:bg-blue-700">
-                {editingCategoryId ? 'Update Category' : 'Add Category'}
-              </button>
-              {editingCategoryId && (
-                <button type="button" onClick={() => { setEditingCategoryId(null); setNewCategory({ name: '', imageUrl: '', isActive: true }); }} className="w-full bg-gray-100 text-gray-600 py-2 rounded text-sm font-medium hover:bg-gray-200 mt-2">
-                  Cancel
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-4">
+            <div className="bg-white shadow-xl shadow-slate-200 rounded-[2.5rem] p-8 border border-slate-100 sticky top-24">
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight flex items-center mb-8">
+                {editingCategoryId ? <Edit2 className="w-6 h-6 mr-3 text-blue-600" /> : <PlusCircle className="w-6 h-6 mr-3 text-blue-600" />}
+                {editingCategoryId ? 'Edit Category' : 'Add Category'}
+              </h3>
+              <form onSubmit={handleCategorySubmit} className="space-y-6">
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Name</label>
+                  <input type="text" required value={newCategory.name} onChange={e => setNewCategory({...newCategory, name: e.target.value})} className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Logo / Image</label>
+                  <div className="flex items-center gap-4">
+                    {newCategory.imageUrl && (
+                      <img src={newCategory.imageUrl} alt="Preview" className="w-14 h-14 object-cover rounded-2xl border border-slate-200 shadow-sm" />
+                    )}
+                    <input type="file" accept="image/*" onChange={handleCategoryImageUpload} className="flex-1 text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-black file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl">
+                  <input type="checkbox" checked={newCategory.isActive} onChange={e => setNewCategory({...newCategory, isActive: e.target.checked})} className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500/20" id="catActive" />
+                  <label htmlFor="catActive" className="text-sm font-bold text-slate-700">Active Category</label>
+                </div>
+                <button type="submit" className="w-full bg-blue-600 text-white py-5 px-8 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/20">
+                  {editingCategoryId ? 'Update Category' : 'Add Category'}
                 </button>
-              )}
-            </form>
+                {editingCategoryId && (
+                  <button type="button" onClick={() => { setEditingCategoryId(null); setNewCategory({ name: '', imageUrl: '', isActive: true }); }} className="w-full bg-slate-100 text-slate-600 py-5 px-8 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-200 transition-all mt-2">
+                    Cancel
+                  </button>
+                )}
+              </form>
+            </div>
           </div>
-          <div className="lg:col-span-2 bg-white shadow rounded-lg overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Logo</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+          <div className="lg:col-span-8 bg-white shadow-xl shadow-slate-200 rounded-[2.5rem] border border-slate-100 overflow-hidden">
+            <table className="min-w-full divide-y divide-slate-100">
+              <thead>
+                <tr className="bg-slate-50/50">
+                  <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Logo</th>
+                  <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Name</th>
+                  <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                  <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Action</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-slate-50">
                 {categories.map(cat => (
-                  <tr key={cat.id}>
-                    <td className="px-6 py-4">
-                      {cat.imageUrl ? (
-                        <img src={cat.imageUrl} alt={cat.name} className="w-10 h-10 object-cover rounded" />
-                      ) : (
-                        <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">No Logo</div>
-                      )}
+                  <tr key={cat.id} className="group hover:bg-slate-50/50 transition-colors duration-300">
+                    <td className="px-8 py-6">
+                      <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center overflow-hidden border border-slate-200 group-hover:scale-110 transition-transform">
+                        {cat.imageUrl ? (
+                          <img src={cat.imageUrl} alt={cat.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <Tag className="w-5 h-5 text-slate-400" />
+                        )}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{cat.name}</td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${cat.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    <td className="px-8 py-6 text-sm font-black text-slate-900">{cat.name}</td>
+                    <td className="px-8 py-6">
+                      <span className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest
+                        ${cat.isActive ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
                         {cat.isActive ? 'Active' : 'Disabled'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm flex space-x-2">
-                      <button onClick={() => { setEditingCategoryId(cat.id); setNewCategory({ name: cat.name, imageUrl: cat.imageUrl || '', isActive: cat.isActive }); }} className="text-blue-500 hover:text-blue-700">
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button onClick={async () => { if(confirm('Delete this category?')) await deleteDoc(doc(db, 'categories', cat.id)); }} className="text-red-500 hover:text-red-700">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                    <td className="px-8 py-6">
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => { setEditingCategoryId(cat.id); setNewCategory({ name: cat.name, imageUrl: cat.imageUrl || '', isActive: cat.isActive }); }} className="p-2 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button onClick={async () => { if(confirm('Delete this category?')) await deleteDoc(doc(db, 'categories', cat.id)); }} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -1221,56 +1345,61 @@ const AdminDashboard: React.FC = () => {
 
       {/* Types Tab */}
       {activeTab === 'types' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1 bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-bold mb-4 flex items-center">
-              {editingTypeId ? <Edit2 className="w-5 h-5 mr-2" /> : <PlusCircle className="w-5 h-5 mr-2" />}
-              {editingTypeId ? 'Edit Type' : 'Add Type'}
-            </h3>
-            <form onSubmit={handleTypeSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-700">Name</label>
-                <input type="text" required value={newType.name} onChange={e => setNewType({...newType, name: e.target.value})} className="w-full border p-2 rounded text-sm" />
-              </div>
-              <div className="flex items-center">
-                <input type="checkbox" checked={newType.isActive} onChange={e => setNewType({...newType, isActive: e.target.checked})} className="mr-2" id="typeActive" />
-                <label htmlFor="typeActive" className="text-sm">Active</label>
-              </div>
-              <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded text-sm font-medium hover:bg-blue-700">
-                {editingTypeId ? 'Update Type' : 'Add Type'}
-              </button>
-              {editingTypeId && (
-                <button type="button" onClick={() => { setEditingTypeId(null); setNewType({ name: '', isActive: true }); }} className="w-full bg-gray-100 text-gray-600 py-2 rounded text-sm font-medium hover:bg-gray-200 mt-2">
-                  Cancel
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-4">
+            <div className="bg-white shadow-xl shadow-slate-200 rounded-[2.5rem] p-8 border border-slate-100 sticky top-24">
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight flex items-center mb-8">
+                {editingTypeId ? <Edit2 className="w-6 h-6 mr-3 text-blue-600" /> : <PlusCircle className="w-6 h-6 mr-3 text-blue-600" />}
+                {editingTypeId ? 'Edit Type' : 'Add Type'}
+              </h3>
+              <form onSubmit={handleTypeSubmit} className="space-y-6">
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Name</label>
+                  <input type="text" required value={newType.name} onChange={e => setNewType({...newType, name: e.target.value})} className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all" />
+                </div>
+                <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl">
+                  <input type="checkbox" checked={newType.isActive} onChange={e => setNewType({...newType, isActive: e.target.checked})} className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500/20" id="typeActive" />
+                  <label htmlFor="typeActive" className="text-sm font-bold text-slate-700">Active Type</label>
+                </div>
+                <button type="submit" className="w-full bg-blue-600 text-white py-5 px-8 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/20">
+                  {editingTypeId ? 'Update Type' : 'Add Type'}
                 </button>
-              )}
-            </form>
+                {editingTypeId && (
+                  <button type="button" onClick={() => { setEditingTypeId(null); setNewType({ name: '', isActive: true }); }} className="w-full bg-slate-100 text-slate-600 py-5 px-8 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-200 transition-all">
+                    Cancel
+                  </button>
+                )}
+              </form>
+            </div>
           </div>
-          <div className="lg:col-span-2 bg-white shadow rounded-lg overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+          <div className="lg:col-span-8 bg-white shadow-xl shadow-slate-200 rounded-[2.5rem] border border-slate-100 overflow-hidden">
+            <table className="min-w-full divide-y divide-slate-100">
+              <thead>
+                <tr className="bg-slate-50/50">
+                  <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Name</th>
+                  <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                  <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Action</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-slate-50">
                 {serviceTypes.map(t => (
-                  <tr key={t.id}>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{t.name}</td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${t.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                  <tr key={t.id} className="group hover:bg-slate-50/50 transition-colors duration-300">
+                    <td className="px-8 py-6 text-sm font-black text-slate-900">{t.name}</td>
+                    <td className="px-8 py-6">
+                      <span className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest
+                        ${t.isActive ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
                         {t.isActive ? 'Active' : 'Disabled'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm flex space-x-2">
-                      <button onClick={() => { setEditingTypeId(t.id); setNewType({ name: t.name, isActive: t.isActive }); }} className="text-blue-500 hover:text-blue-700">
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button onClick={async () => { if(confirm('Delete this type?')) await deleteDoc(doc(db, 'serviceTypes', t.id)); }} className="text-red-500 hover:text-red-700">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                    <td className="px-8 py-6">
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => { setEditingTypeId(t.id); setNewType({ name: t.name, isActive: t.isActive }); }} className="p-2 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button onClick={async () => { if(confirm('Delete this type?')) await deleteDoc(doc(db, 'serviceTypes', t.id)); }} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -1279,6 +1408,9 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
       )}
+          </div>
+        </main>
+      </div>
     </div>
   );
 };

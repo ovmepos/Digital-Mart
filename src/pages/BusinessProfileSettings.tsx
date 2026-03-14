@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase';
 import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
-import { UserCircle, Save, Image as ImageIcon, Globe, Mail, Link as LinkIcon, AlertCircle, CheckCircle, Instagram, Facebook, Twitter, Youtube } from 'lucide-react';
+import { UserCircle, Save, Image as ImageIcon, Globe, Mail, Link as LinkIcon, AlertCircle, CheckCircle, Instagram, Facebook, Twitter, Youtube, Loader2 } from 'lucide-react';
 
 const BusinessProfileSettings: React.FC = () => {
   const { user } = useAuth();
@@ -149,234 +149,202 @@ const BusinessProfileSettings: React.FC = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900 flex items-center">
-          <UserCircle className="w-8 h-8 mr-3 text-blue-600" />
-          Business Profile
-        </h1>
-        <p className="text-slate-500 mt-2">Manage your public business profile and custom URL.</p>
-      </div>
+    <div className="min-h-screen bg-slate-50 py-12 md:py-20">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-12">
+          <h1 className="text-4xl font-black text-slate-900 mb-3 tracking-tight">Business Profile</h1>
+          <p className="text-lg text-slate-600">Manage your business identity and social presence.</p>
+        </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-6 sm:p-8">
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start">
-              <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
-              <p className="text-sm text-red-800">{error}</p>
-            </div>
-          )}
-          
-          {success && (
-            <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start">
-              <CheckCircle className="w-5 h-5 text-emerald-500 mt-0.5 mr-3 flex-shrink-0" />
-              <p className="text-sm text-emerald-800">{success}</p>
-            </div>
-          )}
+        <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
+          <div className="p-8 md:p-12">
+            {error && (
+              <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-start">
+                <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
+                <p className="text-sm text-red-800 font-bold">{error}</p>
+              </div>
+            )}
+            
+            {success && (
+              <div className="mb-8 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-start">
+                <CheckCircle className="w-5 h-5 text-emerald-500 mt-0.5 mr-3 flex-shrink-0" />
+                <p className="text-sm text-emerald-800 font-bold">{success}</p>
+              </div>
+            )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-              
-              <div className="sm:col-span-6">
-                <label className="block text-sm font-medium text-slate-700">Public URL / Username</label>
-                <div className="mt-1 flex rounded-md shadow-sm">
-                  <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-slate-300 bg-slate-50 text-slate-500 sm:text-sm">
-                    {window.location.origin}/
-                  </span>
+            <form onSubmit={handleSubmit} className="space-y-10">
+              {/* Logo Upload Section */}
+              <div className="flex flex-col md:flex-row items-center gap-8 pb-10 border-b border-slate-100">
+                <div className="relative group">
+                  <div className="w-32 h-32 rounded-[2rem] bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden transition-all group-hover:border-blue-400">
+                    {profileData.logoUrl ? (
+                      <img src={profileData.logoUrl} alt="Business Logo" className="w-full h-full object-cover" />
+                    ) : (
+                      <ImageIcon className="w-8 h-8 text-slate-300 group-hover:text-blue-500 transition-colors" />
+                    )}
+                  </div>
                   <input
-                    type="text"
-                    name="username"
-                    required
-                    value={profileData.username}
-                    onChange={handleChange}
-                    className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-slate-300 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    placeholder="yourbusiness"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
                   />
                 </div>
-                <p className="mt-2 text-sm text-slate-500">This will be your public profile link.</p>
+                <div className="text-center md:text-left">
+                  <h3 className="text-lg font-bold text-slate-900 mb-1">Business Logo</h3>
+                  <p className="text-sm text-slate-500 mb-4">Upload a high-quality logo for your brand.</p>
+                  <button type="button" className="text-blue-600 text-sm font-bold hover:text-blue-700">Change Logo</button>
+                </div>
               </div>
 
-              <div className="sm:col-span-6">
-                <label className="block text-sm font-medium text-slate-700">Business Name</label>
-                <div className="mt-1">
+              {/* Basic Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="md:col-span-2">
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Public URL / Username</label>
+                  <div className="mt-1 flex rounded-2xl shadow-sm overflow-hidden">
+                    <span className="inline-flex items-center px-6 bg-slate-100 text-slate-500 text-sm font-bold border-r border-slate-200">
+                      {window.location.origin}/
+                    </span>
+                    <input
+                      type="text"
+                      name="username"
+                      required
+                      value={profileData.username}
+                      onChange={handleChange}
+                      className="flex-1 min-w-0 block w-full px-6 py-4 bg-slate-50 border-none text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      placeholder="yourbusiness"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Business Name</label>
                   <input
                     type="text"
                     name="businessName"
                     required
                     value={profileData.businessName}
                     onChange={handleChange}
-                    className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-slate-300 rounded-md p-2 border"
+                    className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all"
+                    placeholder="e.g. Digital Growth Co."
                   />
                 </div>
-              </div>
 
-              <div className="sm:col-span-6">
-                <label className="block text-sm font-medium text-slate-700">Bio / Description</label>
-                <div className="mt-1">
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Contact Email</label>
+                  <div className="relative">
+                    <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <input
+                      type="email"
+                      name="contactEmail"
+                      value={profileData.contactEmail}
+                      onChange={handleChange}
+                      className="w-full pl-16 pr-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      placeholder="contact@example.com"
+                    />
+                  </div>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Bio / Description</label>
                   <textarea
                     name="bio"
                     rows={3}
                     value={profileData.bio}
                     onChange={handleChange}
-                    className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border border-slate-300 rounded-md p-2"
+                    className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all resize-none"
                     placeholder="Tell your customers about your services..."
                   />
                 </div>
-              </div>
 
-              <div className="sm:col-span-6">
-                <label className="block text-sm font-medium text-slate-700 mb-2">Business Logo</label>
-                <div className="mt-1 flex items-center space-x-5">
-                  <div className="flex-shrink-0 h-24 w-24 rounded-full border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden">
-                    {profileData.logoUrl ? (
-                      <img src={profileData.logoUrl} alt="Logo" className="h-full w-full object-cover" />
-                    ) : (
-                      <ImageIcon className="h-8 w-8 text-slate-400" />
-                    )}
-                  </div>
-                  <label className="cursor-pointer bg-white py-2 px-3 border border-slate-300 rounded-md shadow-sm text-sm leading-4 font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                    <span>Change</span>
-                    <input type="file" accept="image/*" onChange={handleImageUpload} className="sr-only" />
-                  </label>
-                </div>
-              </div>
-
-              <div className="sm:col-span-3">
-                <label className="block text-sm font-medium text-slate-700">Contact Email</label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-4 w-4 text-slate-400" />
-                  </div>
-                  <input
-                    type="email"
-                    name="contactEmail"
-                    value={profileData.contactEmail}
-                    onChange={handleChange}
-                    className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-md p-2 border"
-                    placeholder="contact@example.com"
-                  />
-                </div>
-              </div>
-
-              <div className="sm:col-span-3">
-                <label className="block text-sm font-medium text-slate-700">Website URL</label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Globe className="h-4 w-4 text-slate-400" />
-                  </div>
-                  <input
-                    type="url"
-                    name="website"
-                    value={profileData.website}
-                    onChange={handleChange}
-                    className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-md p-2 border"
-                    placeholder="https://example.com"
-                  />
-                </div>
-              </div>
-
-              <div className="sm:col-span-6 border-t border-slate-200 pt-6 mt-2">
-                <h3 className="text-lg font-medium text-slate-900 mb-4">Social Media Links</h3>
-                <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Instagram URL</label>
-                    <div className="mt-1 relative rounded-md shadow-sm">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Instagram className="h-4 w-4 text-slate-400" />
-                      </div>
-                      <input
-                        type="url"
-                        name="instagram"
-                        value={profileData.instagram}
-                        onChange={handleChange}
-                        className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-md p-2 border"
-                        placeholder="https://instagram.com/yourprofile"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Facebook URL</label>
-                    <div className="mt-1 relative rounded-md shadow-sm">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Facebook className="h-4 w-4 text-slate-400" />
-                      </div>
-                      <input
-                        type="url"
-                        name="facebook"
-                        value={profileData.facebook}
-                        onChange={handleChange}
-                        className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-md p-2 border"
-                        placeholder="https://facebook.com/yourprofile"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">TikTok URL</label>
-                    <div className="mt-1 relative rounded-md shadow-sm">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <LinkIcon className="h-4 w-4 text-slate-400" />
-                      </div>
-                      <input
-                        type="url"
-                        name="tiktok"
-                        value={profileData.tiktok}
-                        onChange={handleChange}
-                        className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-md p-2 border"
-                        placeholder="https://tiktok.com/@yourprofile"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">Twitter / X URL</label>
-                    <div className="mt-1 relative rounded-md shadow-sm">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Twitter className="h-4 w-4 text-slate-400" />
-                      </div>
-                      <input
-                        type="url"
-                        name="twitter"
-                        value={profileData.twitter}
-                        onChange={handleChange}
-                        className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-md p-2 border"
-                        placeholder="https://twitter.com/yourprofile"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700">YouTube URL</label>
-                    <div className="mt-1 relative rounded-md shadow-sm">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Youtube className="h-4 w-4 text-slate-400" />
-                      </div>
-                      <input
-                        type="url"
-                        name="youtube"
-                        value={profileData.youtube}
-                        onChange={handleChange}
-                        className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-md p-2 border"
-                        placeholder="https://youtube.com/@yourprofile"
-                      />
-                    </div>
+                <div className="md:col-span-2">
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Website URL</label>
+                  <div className="relative">
+                    <Globe className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <input
+                      type="url"
+                      name="website"
+                      value={profileData.website}
+                      onChange={handleChange}
+                      className="w-full pl-16 pr-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      placeholder="https://example.com"
+                    />
                   </div>
                 </div>
               </div>
 
-            </div>
+              {/* Social Links */}
+              <div className="space-y-6 pt-6">
+                <h3 className="text-lg font-bold text-slate-900 flex items-center">
+                  <LinkIcon className="w-5 h-5 mr-2 text-blue-600" /> Social Media Links
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="relative">
+                    <Instagram className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-pink-500" />
+                    <input
+                      type="url"
+                      name="instagram"
+                      value={profileData.instagram}
+                      onChange={handleChange}
+                      className="w-full pl-16 pr-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      placeholder="Instagram URL"
+                    />
+                  </div>
+                  <div className="relative">
+                    <Twitter className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-400" />
+                    <input
+                      type="url"
+                      name="twitter"
+                      value={profileData.twitter}
+                      onChange={handleChange}
+                      className="w-full pl-16 pr-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      placeholder="Twitter URL"
+                    />
+                  </div>
+                  <div className="relative">
+                    <Facebook className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-600" />
+                    <input
+                      type="url"
+                      name="facebook"
+                      value={profileData.facebook}
+                      onChange={handleChange}
+                      className="w-full pl-16 pr-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      placeholder="Facebook URL"
+                    />
+                  </div>
+                  <div className="relative">
+                    <Youtube className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-red-600" />
+                    <input
+                      type="url"
+                      name="youtube"
+                      value={profileData.youtube}
+                      onChange={handleChange}
+                      className="w-full pl-16 pr-6 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      placeholder="YouTube URL"
+                    />
+                  </div>
+                </div>
+              </div>
 
-            <div className="pt-5 border-t border-slate-200 flex justify-end">
-              <button
-                type="submit"
-                disabled={saving}
-                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-              >
-                {saving ? 'Saving...' : 'Save Profile'}
-              </button>
-            </div>
-          </form>
+              <div className="pt-10 border-t border-slate-100 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="w-full md:w-auto px-12 py-5 bg-slate-900 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-blue-600 transition-all duration-300 shadow-xl shadow-slate-200 hover:shadow-blue-200 disabled:opacity-50 flex items-center justify-center"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin mr-3" /> Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-5 h-5 mr-3" /> Save Profile
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>

@@ -1,9 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Shield, Zap, BarChart3, ShoppingBag, ArrowRight, Star, TrendingUp } from 'lucide-react';
+import { Shield, Zap, BarChart3, ShoppingBag, ArrowRight, Star, TrendingUp, Crown, Wallet } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const Home: React.FC = () => {
+  const { profile } = useAuth();
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Hero Section */}
@@ -64,6 +66,41 @@ const Home: React.FC = () => {
               <span className="text-sm font-bold text-slate-700 group-hover:text-blue-600">{cat.name}</span>
             </Link>
           ))}
+        </div>
+      </div>
+
+      {/* Platform Navigation Section - New for Full Customization */}
+      <div className="py-16 bg-white border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-slate-900 mb-4">Explore Our Platform</h2>
+            <p className="text-slate-600">Everything you need to manage and grow your digital assets.</p>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            {[
+              { name: 'Shop', path: '/services', icon: <ShoppingBag className="w-6 h-6" />, desc: 'Browse Services', color: 'bg-blue-50 text-blue-600' },
+              { name: 'Plans', path: '/plans', icon: <Crown className="w-6 h-6" />, desc: 'Subscription Deals', color: 'bg-emerald-50 text-emerald-600' },
+              { name: 'Dashboard', path: '/dashboard', icon: <BarChart3 className="w-6 h-6" />, desc: 'Track Orders', color: 'bg-indigo-50 text-indigo-600' },
+              { name: 'IG Store', path: '/ig-store', icon: <Star className="w-6 h-6" />, desc: 'Instagram Specials', color: 'bg-pink-50 text-pink-600' },
+              { name: 'Wishlist', path: '/wishlist', icon: <Star className="w-6 h-6" />, desc: 'Saved Items', color: 'bg-amber-50 text-amber-600' },
+              { name: 'Profile', path: '/profile/settings', icon: <Shield className="w-6 h-6" />, desc: 'Account Settings', color: 'bg-slate-50 text-slate-600' },
+              { name: 'Wallet', path: '/wallet', icon: <Wallet className="w-6 h-6" />, desc: 'Manage Funds', color: 'bg-cyan-50 text-cyan-600' },
+              { name: 'Admin', path: '/admin', icon: <Shield className="w-6 h-6" />, desc: 'Management', color: 'bg-red-50 text-red-600', adminOnly: true },
+            ].filter(item => !item.adminOnly || profile?.role === 'admin').map((item, i) => (
+              <Link 
+                key={i} 
+                to={item.path}
+                className="group p-6 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all text-center flex flex-col items-center"
+              >
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${item.color} group-hover:scale-110 transition-transform`}>
+                  {item.icon}
+                </div>
+                <h3 className="font-bold text-slate-900 mb-1">{item.name}</h3>
+                <p className="text-xs text-slate-500">{item.desc}</p>
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
 

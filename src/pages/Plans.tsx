@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, query, where, getDocs, doc, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { motion } from 'motion/react';
-import { Crown, CheckCircle, AlertCircle } from 'lucide-react';
+import { Crown, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -112,35 +112,43 @@ const Plans: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12">
+    <div className="min-h-screen bg-slate-50 py-12 md:py-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h1 className="text-4xl font-extrabold text-slate-900 mb-4 tracking-tight">Upgrade Your Experience</h1>
-          <p className="text-xl text-slate-600">Get exclusive discounts on all our services by subscribing to a premium plan.</p>
+        <div className="text-center mb-16">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="inline-flex items-center px-4 py-2 rounded-full bg-blue-50 text-blue-600 text-sm font-black uppercase tracking-widest mb-6 border border-blue-100"
+          >
+            <Crown className="w-4 h-4 mr-2" /> Premium Access
+          </motion.div>
+          <h1 className="text-4xl md:text-6xl font-black text-slate-900 mb-6 tracking-tight">Choose Your Power Plan</h1>
+          <p className="text-xl text-slate-600 max-w-2xl mx-auto">Unlock exclusive discounts, priority support, and premium features with our subscription plans.</p>
         </div>
 
         {error && (
-          <div className="max-w-3xl mx-auto mb-8 p-4 bg-red-50 text-red-700 rounded-xl flex items-start border border-red-100">
-            <AlertCircle className="w-5 h-5 mr-3 flex-shrink-0 mt-0.5" />
-            <p>{error}</p>
+          <div className="max-w-3xl mx-auto mb-8 p-6 bg-red-50 text-red-700 rounded-3xl flex items-start border border-red-100 shadow-sm">
+            <AlertCircle className="w-6 h-6 mr-4 flex-shrink-0 mt-0.5" />
+            <p className="font-bold">{error}</p>
           </div>
         )}
 
         {success && (
-          <div className="max-w-3xl mx-auto mb-8 p-4 bg-emerald-50 text-emerald-700 rounded-xl flex items-start border border-emerald-100">
-            <CheckCircle className="w-5 h-5 mr-3 flex-shrink-0 mt-0.5" />
-            <p>{success}</p>
+          <div className="max-w-3xl mx-auto mb-8 p-6 bg-emerald-50 text-emerald-700 rounded-3xl flex items-start border border-emerald-100 shadow-sm">
+            <CheckCircle className="w-6 h-6 mr-4 flex-shrink-0 mt-0.5" />
+            <p className="font-bold">{success}</p>
           </div>
         )}
 
         {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="flex justify-center items-center py-32">
+            <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
           </div>
         ) : plans.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-3xl border border-slate-200 shadow-sm">
-            <Crown className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-            <p className="text-slate-500 text-lg">No subscription plans available at the moment.</p>
+          <div className="text-center py-32 bg-white rounded-[2.5rem] border border-slate-200 shadow-sm">
+            <Crown className="w-20 h-20 text-slate-200 mx-auto mb-6" />
+            <h3 className="text-2xl font-black text-slate-900 mb-2">No plans available</h3>
+            <p className="text-slate-500">Check back later for new subscription options.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
@@ -150,58 +158,61 @@ const Plans: React.FC = () => {
               return (
                 <motion.div
                   key={plan.id}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className={`bg-white rounded-3xl overflow-hidden flex flex-col relative ${
+                  className={`relative bg-white rounded-[2.5rem] p-8 shadow-sm border-2 transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 flex flex-col ${
                     isCurrentPlan 
-                      ? 'ring-2 ring-blue-600 shadow-xl scale-105 z-10' 
-                      : 'border border-slate-200 shadow-sm hover:shadow-lg transition-shadow'
+                      ? 'border-blue-500 scale-105 z-10' 
+                      : 'border-slate-100'
                   }`}
                 >
                   {isCurrentPlan && (
-                    <div className="bg-blue-600 text-white text-xs font-bold uppercase tracking-wider text-center py-1.5 w-full absolute top-0 left-0">
+                    <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest shadow-xl">
                       Current Plan
                     </div>
                   )}
-                  
-                  <div className={`p-8 ${isCurrentPlan ? 'pt-10' : ''}`}>
-                    <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mb-6">
-                      <Crown className="w-7 h-7 text-blue-600" />
+
+                  <div className="mb-8">
+                    <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-6">
+                      <Crown className="w-8 h-8 text-blue-600" />
                     </div>
-                    
-                    <h3 className="text-2xl font-bold text-slate-900 mb-2">{plan.name}</h3>
-                    <p className="text-slate-500 text-sm mb-6 min-h-[40px]">{plan.description}</p>
-                    
-                    <div className="flex items-baseline mb-6">
-                      <span className="text-4xl font-extrabold text-slate-900">{plan.price}</span>
-                      <span className="text-slate-500 ml-2 font-medium">OMR / {plan.duration}</span>
+                    <h3 className="text-2xl font-black text-slate-900 mb-2">{plan.name}</h3>
+                    <p className="text-slate-500 text-sm font-medium leading-relaxed">{plan.description}</p>
+                  </div>
+
+                  <div className="mb-8">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-5xl font-black text-slate-900 tracking-tighter">
+                        {plan.price.toFixed(2)}
+                      </span>
+                      <span className="text-slate-400 font-bold">OMR/{plan.duration === 'yearly' ? 'yr' : 'mo'}</span>
                     </div>
-                    
-                    <div className="bg-emerald-50 rounded-xl p-4 mb-8 border border-emerald-100">
-                      <p className="text-emerald-800 font-bold text-lg text-center">
-                        {plan.discountPercentage}% OFF
-                      </p>
-                      <p className="text-emerald-600 text-xs text-center mt-1 font-medium">on all services</p>
+                  </div>
+
+                  <div className="bg-emerald-50 rounded-2xl p-6 mb-8 border border-emerald-100">
+                    <div className="flex items-center justify-between">
+                      <span className="text-emerald-800 font-black text-2xl">{plan.discountPercentage}% OFF</span>
+                      <span className="text-emerald-600 text-xs font-black uppercase tracking-widest">Store Wide</span>
                     </div>
-                    
-                    <div className="mt-auto">
-                      <button
-                        onClick={() => handleBuyPlan(plan)}
-                        disabled={isCurrentPlan || buyingPlanId === plan.id}
-                        className={`w-full py-4 rounded-xl font-bold transition-all ${
-                          isCurrentPlan
-                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                            : 'bg-slate-900 text-white hover:bg-blue-600 shadow-md hover:shadow-xl'
-                        }`}
-                      >
-                        {buyingPlanId === plan.id 
-                          ? 'Processing...' 
-                          : isCurrentPlan 
-                            ? 'Active' 
-                            : 'Subscribe Now'}
-                      </button>
-                    </div>
+                  </div>
+
+                  <div className="mt-auto">
+                    <button
+                      onClick={() => handleBuyPlan(plan)}
+                      disabled={isCurrentPlan || buyingPlanId === plan.id}
+                      className={`w-full py-5 rounded-2xl font-black text-sm uppercase tracking-widest transition-all duration-300 shadow-lg ${
+                        isCurrentPlan
+                          ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                          : 'bg-slate-900 text-white hover:bg-blue-600 shadow-slate-200 hover:shadow-blue-200'
+                      }`}
+                    >
+                      {buyingPlanId === plan.id 
+                        ? <div className="flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin mr-2" /> Processing...</div>
+                        : isCurrentPlan 
+                          ? 'Active Subscription' 
+                          : 'Subscribe Now'}
+                    </button>
                   </div>
                 </motion.div>
               );

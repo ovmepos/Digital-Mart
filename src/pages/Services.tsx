@@ -224,31 +224,34 @@ const Services: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8">
+    <div className="min-h-screen bg-slate-50 py-8 md:py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-extrabold text-slate-900 mb-2">Digital Catalog</h1>
-          <p className="text-slate-600">Browse our premium digital products and services.</p>
+        <div className="mb-10 text-center md:text-left">
+          <h1 className="text-4xl font-extrabold text-slate-900 mb-3 tracking-tight">Digital Catalog</h1>
+          <p className="text-lg text-slate-600 max-w-2xl">Premium digital growth services tailored for your success. Scale your presence with confidence.</p>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar Filters */}
-          <div className="w-full lg:w-64 flex-shrink-0">
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 sticky top-24">
-              <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center">
-                <Filter className="w-5 h-5 mr-2" /> Categories
-              </h3>
-              <div className="space-y-2">
+          {/* Sidebar Filters - Responsive */}
+          <div className="w-full lg:w-72 flex-shrink-0">
+            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 sticky top-24">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold text-slate-900 flex items-center">
+                  <Filter className="w-5 h-5 mr-2 text-blue-600" /> Categories
+                </h3>
+                <span className="text-xs font-bold px-2 py-1 bg-slate-100 text-slate-500 rounded-lg">{categories.length - 1}</span>
+              </div>
+              <div className="flex lg:flex-col gap-2 overflow-x-auto pb-2 lg:pb-0 no-scrollbar">
                 {categories.map(category => (
                   <button
                     key={category}
                     onClick={() => setSelectedCategory(category)}
-                    className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                    className={`whitespace-nowrap lg:w-full text-left px-4 py-3 rounded-2xl text-sm font-bold transition-all duration-200 ${
                       selectedCategory === category 
-                        ? 'bg-blue-600 text-white shadow-md' 
-                        : 'text-slate-600 hover:bg-slate-100'
+                        ? 'bg-slate-900 text-white shadow-lg shadow-slate-200 translate-x-1' 
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                     }`}
                   >
                     {category}
@@ -261,14 +264,14 @@ const Services: React.FC = () => {
           {/* Main Content */}
           <div className="flex-1">
             {/* Search Bar */}
-            <div className="bg-white p-2 rounded-2xl shadow-sm border border-slate-200 mb-6 flex items-center">
+            <div className="bg-white p-1.5 rounded-3xl shadow-sm border border-slate-200 mb-8 flex items-center focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
               <div className="pl-4">
                 <Search className="h-5 w-5 text-slate-400" />
               </div>
               <input
                 type="text"
-                placeholder="Search products..."
-                className="block w-full pl-3 pr-4 py-3 border-transparent bg-transparent focus:ring-0 focus:border-transparent sm:text-sm"
+                placeholder="Search premium services..."
+                className="block w-full pl-3 pr-4 py-4 border-transparent bg-transparent focus:ring-0 focus:border-transparent text-base font-medium text-slate-900 placeholder:text-slate-400"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -277,45 +280,52 @@ const Services: React.FC = () => {
             {/* Products Grid */}
             {loading ? (
               <div className="flex justify-center items-center py-32">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+                <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
               </div>
             ) : filteredServices.length === 0 ? (
-              <div className="text-center py-32 bg-white rounded-2xl border border-slate-200">
-                <p className="text-slate-500 text-lg">No products found matching your criteria.</p>
+              <div className="text-center py-32 bg-white rounded-3xl border border-slate-200 shadow-sm">
+                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Search className="w-10 h-10 text-slate-300" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">No services found</h3>
+                <p className="text-slate-500">Try adjusting your search or filters to find what you're looking for.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
                 {filteredServices.map((service, index) => (
                   <motion.div
                     key={service.id}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-lg transition-all flex flex-col group"
+                    className="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col group"
                   >
-                    <div className="h-48 overflow-hidden relative">
+                    <div className="h-56 overflow-hidden relative">
                       <img 
                         src={service.imageUrl || getServiceCategoryImage(service.category)} 
                         alt={service.name} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                       />
-                      <div className="absolute top-3 left-3 flex flex-col gap-2">
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-white/90 backdrop-blur-sm text-slate-900 shadow-sm">
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      
+                      <div className="absolute top-4 left-4 flex flex-col gap-2">
+                        <span className="inline-flex items-center px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-white/95 backdrop-blur-md text-slate-900 shadow-lg">
                           {service.category}
                         </span>
                         {service.type && (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-600/90 backdrop-blur-sm text-white shadow-sm">
+                          <span className="inline-flex items-center px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-blue-600 text-white shadow-lg">
                             {service.type}
                           </span>
                         )}
                       </div>
+                      
                       <button 
                         onClick={() => toggleWishlist(service.id)}
                         disabled={wishlistLoading === service.id}
-                        className={`absolute top-3 right-3 p-2 rounded-xl backdrop-blur-sm transition-colors shadow-sm ${
+                        className={`absolute top-4 right-4 p-3 rounded-2xl backdrop-blur-md transition-all duration-300 shadow-lg ${
                           profile?.wishlist?.includes(service.id)
-                            ? 'bg-red-500 text-white'
-                            : 'bg-white/90 text-slate-400 hover:text-red-500'
+                            ? 'bg-red-500 text-white scale-110'
+                            : 'bg-white/90 text-slate-400 hover:text-red-500 hover:scale-110'
                         }`}
                       >
                         {wishlistLoading === service.id ? (
@@ -326,75 +336,56 @@ const Services: React.FC = () => {
                       </button>
                     </div>
                     
-                    <div className="p-5 flex-grow flex flex-col">
-                      <div className="flex items-center mb-2">
-                        <div className="flex text-yellow-400 text-sm">
-                          <Star className="w-4 h-4 fill-current" />
-                          <Star className="w-4 h-4 fill-current" />
-                          <Star className="w-4 h-4 fill-current" />
-                          <Star className="w-4 h-4 fill-current" />
-                          <Star className="w-4 h-4 fill-current" />
+                    <div className="p-6 flex-grow flex flex-col">
+                      <div className="flex items-center mb-3">
+                        <div className="flex text-amber-400">
+                          {[...Array(5)].map((_, i) => (
+                            <Star key={i} className="w-3.5 h-3.5 fill-current" />
+                          ))}
                         </div>
-                        <span className="text-xs text-slate-400 ml-2">(4.9)</span>
+                        <span className="text-[10px] font-bold text-slate-400 ml-2 tracking-wider">4.9 RATING</span>
                       </div>
                       
-                      <h3 className="text-lg font-bold text-slate-900 mb-1 line-clamp-2">{service.name}</h3>
-                      <p className="text-slate-500 text-sm mb-3 line-clamp-2">{service.description}</p>
+                      <h3 className="text-xl font-bold text-slate-900 mb-2 leading-tight group-hover:text-blue-600 transition-colors">{service.name}</h3>
+                      <p className="text-slate-500 text-sm mb-4 line-clamp-2 leading-relaxed">{service.description}</p>
                       
-                      {service.averageTime && (
-                        <p className="text-xs text-slate-500 mb-2 flex items-center">
-                          <span className="font-semibold mr-1">Avg Time:</span> {service.averageTime}
-                        </p>
-                      )}
+                      <div className="flex flex-wrap gap-1.5 mb-6">
+                        {service.averageTime && (
+                          <span className="px-3 py-1 bg-slate-50 text-slate-600 text-[10px] font-bold rounded-lg border border-slate-100">
+                            ⏱ {service.averageTime}
+                          </span>
+                        )}
+                        {service.features && service.features.slice(0, 2).map((feature, idx) => (
+                          <span key={idx} className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-lg border border-blue-100">
+                            ✓ {feature}
+                          </span>
+                        ))}
+                      </div>
                       
-                      {service.features && service.features.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mb-4 flex-grow">
-                          {service.features.slice(0, 3).map((feature, idx) => (
-                            <span key={idx} className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-medium rounded-full">
-                              {feature}
-                            </span>
-                          ))}
-                          {service.features.length > 3 && (
-                            <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-medium rounded-full">
-                              +{service.features.length - 3} more
-                            </span>
-                          )}
-                        </div>
-                      )}
-                      
-                      <div className="flex items-end justify-between mt-auto pt-4 border-t border-slate-100">
+                      <div className="mt-auto pt-6 border-t border-slate-100 flex items-center justify-between">
                         <div>
-                          <p className="text-xs text-slate-500 font-medium mb-1">Price per 1k</p>
-                          <div className="flex items-baseline space-x-2">
-                            <p className="text-xl font-extrabold text-blue-600">
-                              {getDiscountedPrice(service.pricePer1000).toFixed(3)} <span className="text-sm font-medium text-slate-500">OMR</span>
-                            </p>
-                            {getDiscountedPrice(service.pricePer1000) < service.pricePer1000 && (
-                              <p className="text-sm text-slate-400 line-through">
-                                {service.pricePer1000.toFixed(3)}
-                              </p>
-                            )}
+                          <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">Starting Price</p>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-2xl font-black text-slate-900">
+                              {getDiscountedPrice(service.pricePer1000).toFixed(3)}
+                            </span>
+                            <span className="text-xs font-bold text-slate-500">OMR</span>
                           </div>
                         </div>
-                        <div className="flex space-x-2">
+                        
+                        <div className="flex gap-2">
                           <button 
                             onClick={() => handleAddToCart(service)}
                             disabled={cartLoading === service.id}
-                            className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center hover:bg-blue-100 transition-colors border border-blue-100"
-                            title="Add to Cart"
+                            className="p-3 bg-slate-50 text-slate-900 rounded-2xl hover:bg-blue-50 hover:text-blue-600 transition-all border border-slate-200 hover:border-blue-200"
                           >
-                            {cartLoading === service.id ? (
-                              <Loader2 className="w-5 h-5 animate-spin" />
-                            ) : (
-                              <Plus className="w-5 h-5" />
-                            )}
+                            {cartLoading === service.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
                           </button>
                           <button 
                             onClick={() => handleBuyClick(service)}
-                            className="w-12 h-12 bg-slate-900 text-white rounded-xl flex items-center justify-center hover:bg-blue-600 transition-colors shadow-md"
-                            title="Buy Now"
+                            className="px-5 py-3 bg-slate-900 text-white rounded-2xl font-bold text-sm hover:bg-blue-600 transition-all shadow-lg shadow-slate-200 hover:shadow-blue-200"
                           >
-                            <ShoppingCart className="w-5 h-5" />
+                            Buy Now
                           </button>
                         </div>
                       </div>
