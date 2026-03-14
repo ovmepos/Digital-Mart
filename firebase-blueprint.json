@@ -60,6 +60,19 @@
           "type": "string",
           "description": "Description or details about the service"
         },
+        "averageTime": {
+          "type": "string",
+          "description": "Average time for delivery"
+        },
+        "features": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of features"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of the item (e.g., Service, Product)"
+        },
         "isActive": {
           "type": "boolean",
           "description": "Whether the service is currently available for ordering"
@@ -113,6 +126,36 @@
         }
       },
       "required": ["userId", "serviceId", "serviceName", "link", "quantity", "totalPrice", "status", "createdAt"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "A record of a balance change for a user",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "ID of the user"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount added or deducted (negative for deduction)"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["topup", "order", "refund", "adjustment"],
+          "description": "Type of transaction"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the transaction"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the transaction occurred"
+        }
+      },
+      "required": ["userId", "amount", "type", "description", "createdAt"]
     }
   },
   "firestore": {
@@ -133,6 +176,12 @@
         "$ref": "#/entities/Order"
       },
       "description": "Stores user orders"
+    },
+    "/transactions/{transactionId}": {
+      "schema": {
+        "$ref": "#/entities/Transaction"
+      },
+      "description": "Stores user wallet transactions"
     }
   }
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, Wallet, LayoutDashboard, Settings, Menu, X, ShoppingBag, Instagram, ShoppingCart } from 'lucide-react';
+import { LogOut, Wallet, LayoutDashboard, Settings, Menu, X, ShoppingBag, Instagram, ShoppingCart, UserCircle, Crown } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const { user, profile, logout } = useAuth();
@@ -37,6 +37,13 @@ const Navbar: React.FC = () => {
                 <ShoppingCart className="w-4 h-4 mr-1.5" />
                 Shop
               </Link>
+              <Link 
+                to="/plans" 
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/plans') ? 'border-blue-500 text-slate-900' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'}`}
+              >
+                <Crown className="w-4 h-4 mr-1.5" />
+                Plans
+              </Link>
             </div>
           </div>
 
@@ -53,6 +60,10 @@ const Navbar: React.FC = () => {
                 <Link to="/ig-store" className="text-slate-500 hover:text-pink-600 flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors">
                   <Instagram className="w-4 h-4 mr-1.5" />
                   IG Store
+                </Link>
+                <Link to="/profile/settings" className="text-slate-500 hover:text-blue-600 flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                  <UserCircle className="w-4 h-4 mr-1.5" />
+                  Profile
                 </Link>
                 <Link to="/dashboard" className="text-slate-500 hover:text-blue-600 flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors">
                   <LayoutDashboard className="w-4 h-4 mr-1.5" />
@@ -104,11 +115,17 @@ const Navbar: React.FC = () => {
             <Link to="/services" className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/services') ? 'bg-blue-50 border-blue-500 text-blue-700' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800'}`}>
               Shop
             </Link>
+            <Link to="/plans" className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/plans') ? 'bg-blue-50 border-blue-500 text-blue-700' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800'}`}>
+              Plans
+            </Link>
             
             {user && profile ? (
               <>
                 <Link to="/ig-store" className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/ig-store') ? 'bg-pink-50 border-pink-500 text-pink-700' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800'}`}>
                   IG Store
+                </Link>
+                <Link to="/profile/settings" className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/profile/settings') ? 'bg-blue-50 border-blue-500 text-blue-700' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800'}`}>
+                  Profile
                 </Link>
                 <Link to="/dashboard" className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/dashboard') ? 'bg-blue-50 border-blue-500 text-blue-700' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800'}`}>
                   Dashboard

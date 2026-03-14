@@ -14,6 +14,10 @@ interface Service {
   minQuantity: number;
   maxQuantity: number;
   description: string;
+  averageTime?: string;
+  features?: string[];
+  type?: string;
+  imageUrl?: string;
 }
 
 const getCategoryImage = (category: string) => {
@@ -32,6 +36,7 @@ const Services: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [plans, setPlans] = useState<any[]>([]);
   
   // Buy Modal State
   const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -48,6 +53,9 @@ const Services: React.FC = () => {
         const snapshot = await getDocs(q);
         const svcs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Service));
         setServices(svcs);
+        
+        const plansSnapshot = await getDocs(collection(db, 'subscriptionPlans'));
+        setPlans(plansSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       } catch (error) {
         console.error("Error fetching services:", error);
       } finally {
@@ -79,6 +87,13 @@ const Services: React.FC = () => {
     setSuccess('');
   };
 
+  const getDiscountedPrice = (price: number) => {
+    if (!profile?.planId) return price;
+    const plan = plans.find(p => p.id === profile.planId);
+    if (!plan || !plan.isActive) return price;
+    return price * (1 - plan.discountPercentage / 100);
+  };
+
   const handleOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedService || !user || !profile) return;
@@ -91,7 +106,8 @@ const Services: React.FC = () => {
       return;
     }
 
-    const totalPrice = (quantity * selectedService.pricePer1000) / 1000;
+    const basePrice = (quantity * selectedService.pricePer1000) / 1000;
+    const totalPrice = getDiscountedPrice(basePrice);
 
     if (profile.walletBalance < totalPrice) {
       setError('Insufficient funds. Please top up your wallet in the dashboard.');
@@ -102,6 +118,7 @@ const Services: React.FC = () => {
     try {
       const userRef = doc(db, 'users', user.uid);
       const newOrderRef = doc(collection(db, 'orders'));
+      const newTransactionRef = doc(collection(db, 'transactions'));
 
       await runTransaction(db, async (transaction) => {
         const userDoc = await transaction.get(userRef);
@@ -121,6 +138,13 @@ const Services: React.FC = () => {
           quantity,
           totalPrice,
           status: 'Pending',
+          createdAt: serverTimestamp()
+        });
+        transaction.set(newTransactionRef, {
+          userId: user.uid,
+          amount: -totalPrice,
+          type: 'order',
+          description: `Order: ${selectedService.name} (Qty: ${quantity})`,
           createdAt: serverTimestamp()
         });
       });
@@ -206,14 +230,19 @@ const Services: React.FC = () => {
                   >
                     <div className="h-48 overflow-hidden relative">
                       <img 
-                        src={getCategoryImage(service.category)} 
-                        alt={service.category} 
+                        src={service.imageUrl || getCategoryImage(service.category)} 
+                        alt={service.name} 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
-                      <div className="absolute top-3 left-3">
+                      <div className="absolute top-3 left-3 flex flex-col gap-2">
                         <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-white/90 backdrop-blur-sm text-slate-900 shadow-sm">
                           {service.category}
                         </span>
+                        {service.type && (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-600/90 backdrop-blur-sm text-white shadow-sm">
+                            {service.type}
+                          </span>
+                        )}
                       </div>
                     </div>
                     
@@ -230,14 +259,42 @@ const Services: React.FC = () => {
                       </div>
                       
                       <h3 className="text-lg font-bold text-slate-900 mb-1 line-clamp-2">{service.name}</h3>
-                      <p className="text-slate-500 text-sm mb-4 line-clamp-2 flex-grow">{service.description}</p>
+                      <p className="text-slate-500 text-sm mb-3 line-clamp-2">{service.description}</p>
+                      
+                      {service.averageTime && (
+                        <p className="text-xs text-slate-500 mb-2 flex items-center">
+                          <span className="font-semibold mr-1">Avg Time:</span> {service.averageTime}
+                        </p>
+                      )}
+                      
+                      {service.features && service.features.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-4 flex-grow">
+                          {service.features.slice(0, 3).map((feature, idx) => (
+                            <span key={idx} className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-medium rounded-full">
+                              {feature}
+                            </span>
+                          ))}
+                          {service.features.length > 3 && (
+                            <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-medium rounded-full">
+                              +{service.features.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      )}
                       
                       <div className="flex items-end justify-between mt-auto pt-4 border-t border-slate-100">
                         <div>
                           <p className="text-xs text-slate-500 font-medium mb-1">Price per 1k</p>
-                          <p className="text-xl font-extrabold text-blue-600">
-                            {service.pricePer1000.toFixed(3)} <span className="text-sm font-medium text-slate-500">OMR</span>
-                          </p>
+                          <div className="flex items-baseline space-x-2">
+                            <p className="text-xl font-extrabold text-blue-600">
+                              {getDiscountedPrice(service.pricePer1000).toFixed(3)} <span className="text-sm font-medium text-slate-500">OMR</span>
+                            </p>
+                            {getDiscountedPrice(service.pricePer1000) < service.pricePer1000 && (
+                              <p className="text-sm text-slate-400 line-through">
+                                {service.pricePer1000.toFixed(3)}
+                              </p>
+                            )}
+                          </div>
                         </div>
                         <button 
                           onClick={() => handleBuyClick(service)}
@@ -269,13 +326,37 @@ const Services: React.FC = () => {
             </div>
             
             <div className="p-6">
-              <div className="flex gap-4 mb-6 pb-6 border-b border-slate-100">
+              <div className="flex gap-4 mb-4 pb-4 border-b border-slate-100">
                 <img src={getCategoryImage(selectedService.category)} alt="Product" className="w-16 h-16 rounded-xl object-cover shadow-sm" />
                 <div>
                   <h4 className="font-bold text-slate-900 line-clamp-2 text-sm">{selectedService.name}</h4>
-                  <p className="text-blue-600 font-bold mt-1">{selectedService.pricePer1000.toFixed(3)} OMR <span className="text-xs text-slate-500 font-normal">/ 1k</span></p>
+                  <div className="flex items-baseline space-x-2 mt-1">
+                    <p className="text-blue-600 font-bold">{getDiscountedPrice(selectedService.pricePer1000).toFixed(3)} OMR <span className="text-xs text-slate-500 font-normal">/ 1k</span></p>
+                    {getDiscountedPrice(selectedService.pricePer1000) < selectedService.pricePer1000 && (
+                      <p className="text-xs text-slate-400 line-through">{selectedService.pricePer1000.toFixed(3)}</p>
+                    )}
+                  </div>
                 </div>
               </div>
+
+              {(selectedService.averageTime || (selectedService.features && selectedService.features.length > 0)) && (
+                <div className="mb-6 pb-6 border-b border-slate-100">
+                  {selectedService.averageTime && (
+                    <p className="text-sm text-slate-600 mb-2">
+                      <span className="font-semibold text-slate-800">Average Time:</span> {selectedService.averageTime}
+                    </p>
+                  )}
+                  {selectedService.features && selectedService.features.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {selectedService.features.map((feature, idx) => (
+                        <span key={idx} className="px-2 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded-md">
+                          {feature}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {error && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm flex items-start"><AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />{error}</div>}
               {success && <div className="mb-4 p-3 bg-emerald-50 text-emerald-700 rounded-lg text-sm flex items-start"><CheckCircle className="w-5 h-5 mr-2 flex-shrink-0" />{success}</div>}
@@ -311,9 +392,16 @@ const Services: React.FC = () => {
 
                 <div className="mb-6 p-4 bg-slate-900 rounded-xl flex justify-between items-center shadow-inner">
                   <span className="text-slate-300 font-medium">Total Price:</span>
-                  <span className="text-2xl font-bold text-white">
-                    {((quantity * selectedService.pricePer1000) / 1000).toFixed(3)} OMR
-                  </span>
+                  <div className="text-right">
+                    <span className="text-2xl font-bold text-white block">
+                      {getDiscountedPrice((quantity * selectedService.pricePer1000) / 1000).toFixed(3)} OMR
+                    </span>
+                    {getDiscountedPrice(selectedService.pricePer1000) < selectedService.pricePer1000 && (
+                      <span className="text-sm text-slate-400 line-through block">
+                        {((quantity * selectedService.pricePer1000) / 1000).toFixed(3)} OMR
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <button 

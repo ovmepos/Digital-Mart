@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth, db } from '../firebase';
 import { onAuthStateChanged, User, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 
 interface UserProfile {
   name: string;
@@ -9,6 +9,7 @@ interface UserProfile {
   role: 'admin' | 'user';
   walletBalance: number;
   createdAt: any;
+  planId?: string;
 }
 
 interface AuthContextType {
@@ -27,41 +28,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    let unsubscribeProfile: () => void;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        // Fetch or create user profile
         const userDocRef = doc(db, 'users', currentUser.uid);
-        const userDoc = await getDoc(userDocRef);
-        
         const isAdminEmail = currentUser.email === 'ovmepos@gmail.com';
-        
-        if (userDoc.exists()) {
-          const data = userDoc.data() as UserProfile;
-          // Auto-upgrade to admin if email matches
-          if (isAdminEmail && data.role !== 'admin') {
-            await updateDoc(userDocRef, { role: 'admin' });
-            data.role = 'admin';
+
+        // Set up real-time listener for the user document
+        unsubscribeProfile = onSnapshot(userDocRef, async (docSnapshot) => {
+          if (docSnapshot.exists()) {
+            const data = docSnapshot.data() as UserProfile;
+            // Auto-upgrade to admin if email matches
+            if (isAdminEmail && data.role !== 'admin') {
+              await updateDoc(userDocRef, { role: 'admin' });
+              data.role = 'admin';
+            }
+            setProfile(data);
+          } else {
+            const newProfile: UserProfile = {
+              name: currentUser.displayName || 'User',
+              email: currentUser.email || '',
+              role: isAdminEmail ? 'admin' : 'user',
+              walletBalance: 0,
+              createdAt: serverTimestamp(),
+            };
+            await setDoc(userDocRef, newProfile);
+            setProfile(newProfile);
           }
-          setProfile(data);
-        } else {
-          const newProfile: UserProfile = {
-            name: currentUser.displayName || 'User',
-            email: currentUser.email || '',
-            role: isAdminEmail ? 'admin' : 'user',
-            walletBalance: 0,
-            createdAt: serverTimestamp(),
-          };
-          await setDoc(userDocRef, newProfile);
-          setProfile(newProfile);
-        }
+          setLoading(false);
+        });
       } else {
         setProfile(null);
+        setLoading(false);
+        if (unsubscribeProfile) unsubscribeProfile();
       }
-      setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeProfile) unsubscribeProfile();
+    };
   }, []);
 
   const loginWithGoogle = async () => {

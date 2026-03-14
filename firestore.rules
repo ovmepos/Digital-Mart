@@ -75,16 +75,17 @@ service cloud.firestore {
     // ===============================================================
     
     function isValidUser(data) {
-      return hasOnlyAllowedFields(['name', 'email', 'role', 'walletBalance', 'createdAt']) &&
+      return hasOnlyAllowedFields(['name', 'email', 'role', 'walletBalance', 'createdAt', 'planId']) &&
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
              data.email is string && isValidEmail(data.email) &&
              data.role in ['admin', 'user'] &&
              data.walletBalance is number && data.walletBalance >= 0 &&
+             (!('planId' in data) || (data.planId is string && data.planId.size() < 50)) &&
              data.createdAt is timestamp;
     }
     
     function isValidService(data) {
-      return hasOnlyAllowedFields(['name', 'category', 'pricePer1000', 'minQuantity', 'maxQuantity', 'description', 'isActive', 'createdAt']) &&
+      return hasOnlyAllowedFields(['name', 'category', 'pricePer1000', 'minQuantity', 'maxQuantity', 'description', 'isActive', 'createdAt', 'averageTime', 'features', 'type', 'imageUrl']) &&
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
              data.category is string && data.category.size() > 0 && data.category.size() < 50 &&
              data.pricePer1000 is number && data.pricePer1000 >= 0 &&
@@ -92,18 +93,68 @@ service cloud.firestore {
              data.maxQuantity is number && data.maxQuantity >= data.minQuantity &&
              data.description is string && data.description.size() < 1000 &&
              data.isActive is bool &&
-             data.createdAt is timestamp;
+             data.createdAt is timestamp &&
+             (!('averageTime' in data) || (data.averageTime is string && data.averageTime.size() < 100)) &&
+             (!('features' in data) || (data.features is list && data.features.size() <= 20)) &&
+             (!('type' in data) || (data.type is string && data.type.size() < 50)) &&
+             (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() < 500000));
     }
     
     function isValidOrder(data) {
       return hasOnlyAllowedFields(['userId', 'serviceId', 'serviceName', 'link', 'quantity', 'totalPrice', 'status', 'createdAt']) &&
-             data.userId is string && data.userId == request.auth.uid &&
+             data.userId is string &&
              data.serviceId is string && data.serviceId.size() > 0 && data.serviceId.size() < 100 &&
              data.serviceName is string && data.serviceName.size() > 0 && data.serviceName.size() < 100 &&
              data.link is string && isValidUrl(data.link) && data.link.size() < 500 &&
              data.quantity is number && data.quantity > 0 &&
              data.totalPrice is number && data.totalPrice >= 0 &&
              data.status in ['Pending', 'Processing', 'Completed', 'Canceled'] &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidTransaction(data) {
+      return hasOnlyAllowedFields(['userId', 'amount', 'type', 'description', 'createdAt']) &&
+             data.userId is string &&
+             data.amount is number &&
+             data.type in ['topup', 'order', 'refund', 'adjustment'] &&
+             data.description is string && data.description.size() < 500 &&
+             data.createdAt is timestamp;
+    }
+    
+    function isValidPaymentGateway(data) {
+      return hasOnlyAllowedFields(['name', 'isActive', 'config', 'updatedAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 50 &&
+             data.isActive is bool &&
+             data.config is map &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidSubscriptionPlan(data) {
+      return hasOnlyAllowedFields(['name', 'discountPercentage', 'price', 'description', 'isActive', 'createdAt', 'updatedAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 50 &&
+             data.discountPercentage is number && data.discountPercentage >= 0 && data.discountPercentage <= 100 &&
+             data.price is number && data.price >= 0 &&
+             data.description is string && data.description.size() < 500 &&
+             data.isActive is bool &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+    
+    function isValidBusinessProfile(data) {
+      return hasOnlyAllowedFields(['userId', 'username', 'businessName', 'bio', 'logoUrl', 'contactEmail', 'website', 'instagram', 'facebook', 'tiktok', 'twitter', 'youtube', 'updatedAt', 'createdAt']) &&
+             data.userId is string &&
+             data.username is string && data.username.size() >= 3 && data.username.size() <= 30 && data.username.matches("^[a-zA-Z0-9_]+$") &&
+             data.businessName is string && data.businessName.size() > 0 && data.businessName.size() <= 100 &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() <= 500)) &&
+             (!('logoUrl' in data) || (data.logoUrl is string && data.logoUrl.size() <= 500000)) &&
+             (!('contactEmail' in data) || (data.contactEmail is string && data.contactEmail.size() <= 100)) &&
+             (!('website' in data) || (data.website is string && data.website.size() <= 100)) &&
+             (!('instagram' in data) || (data.instagram is string && data.instagram.size() <= 200)) &&
+             (!('facebook' in data) || (data.facebook is string && data.facebook.size() <= 200)) &&
+             (!('tiktok' in data) || (data.tiktok is string && data.tiktok.size() <= 200)) &&
+             (!('twitter' in data) || (data.twitter is string && data.twitter.size() <= 200)) &&
+             (!('youtube' in data) || (data.youtube is string && data.youtube.size() <= 200)) &&
+             data.updatedAt is timestamp &&
              data.createdAt is timestamp;
     }
     
@@ -123,7 +174,8 @@ service cloud.firestore {
       allow update: if (isOwner(userId) && isValidUser(request.resource.data) && 
                         request.resource.data.role == resource.data.role && 
                         request.resource.data.walletBalance == resource.data.walletBalance &&
-                        request.resource.data.createdAt == resource.data.createdAt) || 
+                        request.resource.data.createdAt == resource.data.createdAt &&
+                        request.resource.data.get('planId', '') == resource.data.get('planId', '')) || 
                        (isAdmin() && isValidUser(request.resource.data));
                        
       allow delete: if isAdmin();
@@ -147,6 +199,7 @@ service cloud.firestore {
       // Users can create orders if they have enough balance (balance check handled via transaction in client/functions)
       // Here we just validate the shape.
       allow create: if isAuthenticated() && isValidOrder(request.resource.data) && 
+                    request.resource.data.userId == request.auth.uid &&
                     request.resource.data.status == 'Pending';
                     
       // Only admins can update orders (e.g., status changes)
@@ -154,6 +207,40 @@ service cloud.firestore {
                     request.resource.data.userId == resource.data.userId &&
                     request.resource.data.createdAt == resource.data.createdAt;
                     
+      allow delete: if isAdmin();
+    }
+
+    match /transactions/{transactionId} {
+      // Users can read their own transactions, admins can read all
+      allow read: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
+      
+      // Users can create transactions (e.g. when placing an order)
+      // Admins can create transactions (e.g. when adding funds)
+      // For admins creating transactions for other users, we need to bypass the `userId == request.auth.uid` check in isValidTransaction.
+      // Let's adjust the create rule to allow admins to create transactions for any user.
+      allow create: if (isAuthenticated() && isValidTransaction(request.resource.data) && request.resource.data.userId == request.auth.uid) || 
+                    (isAdmin() && isValidTransaction(request.resource.data));
+                     
+      allow update: if false; // Transactions are immutable
+      allow delete: if isAdmin();
+    }
+
+    match /paymentGateways/{gatewayId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdmin() && isValidPaymentGateway(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /businessProfiles/{userId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && request.auth.uid == userId && isValidBusinessProfile(request.resource.data) && request.resource.data.userId == userId;
+      allow update: if isAuthenticated() && request.auth.uid == userId && isValidBusinessProfile(request.resource.data) && request.resource.data.userId == userId && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isAdmin();
+    }
+
+    match /subscriptionPlans/{planId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdmin() && isValidSubscriptionPlan(request.resource.data);
       allow delete: if isAdmin();
     }
   }

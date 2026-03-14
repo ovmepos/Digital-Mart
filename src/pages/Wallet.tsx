@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase';
-import { doc, updateDoc, increment } from 'firebase/firestore';
-import { Wallet as WalletIcon, CreditCard, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { doc, collection, runTransaction, serverTimestamp, onSnapshot, query } from 'firebase/firestore';
+import { Wallet as WalletIcon, CreditCard, CheckCircle, AlertCircle, Loader2, Building2, MessageCircle } from 'lucide-react';
 
 const Wallet: React.FC = () => {
   const { user, profile } = useAuth();
@@ -10,6 +10,20 @@ const Wallet: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [gateways, setGateways] = useState<any[]>([]);
+  const [selectedGateway, setSelectedGateway] = useState<string>('');
+
+  useEffect(() => {
+    const q = query(collection(db, 'paymentGateways'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const gws = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter((g: any) => g.isActive);
+      setGateways(gws);
+      if (gws.length > 0 && !selectedGateway) {
+        setSelectedGateway(gws[0].id);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   const handleAddFunds = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,17 +34,49 @@ const Wallet: React.FC = () => {
       return;
     }
 
+    if (!selectedGateway) {
+      setError('Please select a payment method');
+      return;
+    }
+
+    if (selectedGateway === 'manual') {
+      // For manual, we don't process immediately. We just show instructions or redirect to WhatsApp.
+      const manualGw = gateways.find(g => g.id === 'manual');
+      if (manualGw) {
+        const msg = `Hello, I want to add ${amount} OMR to my wallet. My User ID is: ${user.uid}`;
+        const whatsappUrl = `https://wa.me/${manualGw.config.whatsappNumber}?text=${encodeURIComponent(msg)}`;
+        window.open(whatsappUrl, '_blank');
+        setSuccess(true);
+        return;
+      }
+    }
+
     setLoading(true);
     setError('');
     setSuccess(false);
 
-    // Simulate payment gateway delay
+    // Simulate payment gateway delay (PayPal/Thawani integration would go here)
     setTimeout(async () => {
       try {
         const userRef = doc(db, 'users', user.uid);
-        await updateDoc(userRef, {
-          walletBalance: increment(amount)
+        const newTransactionRef = doc(collection(db, 'transactions'));
+
+        await runTransaction(db, async (transaction) => {
+          const userDoc = await transaction.get(userRef);
+          if (!userDoc.exists()) throw new Error("User not found");
+
+          const currentBalance = userDoc.data().walletBalance || 0;
+          
+          transaction.update(userRef, { walletBalance: currentBalance + amount });
+          transaction.set(newTransactionRef, {
+            userId: user.uid,
+            amount: amount,
+            type: 'topup',
+            description: `Wallet Top-up via ${gateways.find(g => g.id === selectedGateway)?.name || 'Gateway'}`,
+            createdAt: serverTimestamp()
+          });
         });
+
         setSuccess(true);
         setAmount(10);
       } catch (err: any) {
@@ -128,20 +174,60 @@ const Wallet: React.FC = () => {
                 <label className="block text-sm font-medium text-slate-700 mb-3">
                   Payment Method
                 </label>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="border-2 border-blue-600 bg-blue-50 rounded-xl p-4 cursor-pointer flex items-center justify-center">
-                    <CreditCard className="w-5 h-5 text-blue-600 mr-2" />
-                    <span className="font-medium text-blue-900">Credit Card</span>
+                {gateways.length === 0 ? (
+                  <p className="text-sm text-slate-500 italic">No payment gateways available at the moment.</p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {gateways.map(gw => (
+                      <div 
+                        key={gw.id}
+                        onClick={() => setSelectedGateway(gw.id)}
+                        className={`border-2 rounded-xl p-4 cursor-pointer flex items-center justify-center transition-colors ${
+                          selectedGateway === gw.id 
+                            ? 'border-blue-600 bg-blue-50' 
+                            : 'border-slate-200 hover:border-slate-300 bg-white'
+                        }`}
+                      >
+                        {gw.id === 'paypal' && <WalletIcon className={`w-5 h-5 mr-2 ${selectedGateway === gw.id ? 'text-blue-600' : 'text-slate-500'}`} />}
+                        {gw.id === 'thawani' && <CreditCard className={`w-5 h-5 mr-2 ${selectedGateway === gw.id ? 'text-blue-600' : 'text-slate-500'}`} />}
+                        {gw.id === 'manual' && <Building2 className={`w-5 h-5 mr-2 ${selectedGateway === gw.id ? 'text-blue-600' : 'text-slate-500'}`} />}
+                        <span className={`font-medium ${selectedGateway === gw.id ? 'text-blue-900' : 'text-slate-700'}`}>
+                          {gw.name}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                  <div className="border border-slate-200 hover:border-slate-300 rounded-xl p-4 cursor-not-allowed opacity-60 flex items-center justify-center bg-slate-50">
-                    <span className="font-medium text-slate-500">PayPal (Coming Soon)</span>
+                )}
+                
+                {selectedGateway === 'manual' && (
+                  <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-xl">
+                    <h4 className="text-sm font-medium text-purple-900 mb-2 flex items-center">
+                      <MessageCircle className="w-4 h-4 mr-2" /> Manual Transfer Instructions
+                    </h4>
+                    <p className="text-sm text-purple-800 whitespace-pre-wrap mb-3">
+                      {gateways.find(g => g.id === 'manual')?.config?.instructions}
+                    </p>
+                    <div className="bg-white p-3 rounded border border-purple-100 mb-3">
+                      <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Bank Details</p>
+                      <p className="text-sm font-mono text-slate-800 whitespace-pre-wrap">
+                        {gateways.find(g => g.id === 'manual')?.config?.bankDetails}
+                      </p>
+                    </div>
+                    {gateways.find(g => g.id === 'manual')?.config?.upiId && (
+                      <div className="bg-white p-3 rounded border border-purple-100">
+                        <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">UPI ID</p>
+                        <p className="text-sm font-mono text-slate-800">
+                          {gateways.find(g => g.id === 'manual')?.config?.upiId}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                </div>
+                )}
               </div>
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || gateways.length === 0}
                 className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 disabled:cursor-not-allowed transition-colors"
               >
                 {loading ? (
@@ -150,7 +236,7 @@ const Wallet: React.FC = () => {
                     Processing Payment...
                   </>
                 ) : (
-                  `Pay ${amount.toFixed(3)} OMR`
+                  selectedGateway === 'manual' ? 'Contact via WhatsApp' : `Pay ${amount.toFixed(3)} OMR`
                 )}
               </button>
             </form>

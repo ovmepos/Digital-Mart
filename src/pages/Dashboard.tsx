@@ -13,10 +13,12 @@ interface Service {
   maxQuantity: number;
   description: string;
   isActive: boolean;
+  imageUrl?: string;
 }
 
 interface Order {
   id: string;
+  serviceId: string;
   serviceName: string;
   link: string;
   quantity: number;
@@ -29,6 +31,7 @@ const Dashboard: React.FC = () => {
   const { user, profile } = useAuth();
   const [services, setServices] = useState<Service[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [plans, setPlans] = useState<any[]>([]);
   
   // Form state
   const [selectedCategory, setSelectedCategory] = useState<string>('');
@@ -61,9 +64,16 @@ const Dashboard: React.FC = () => {
       setOrders(ords);
     });
 
+    // Fetch plans
+    const qPlans = query(collection(db, 'subscriptionPlans'), where('isActive', '==', true));
+    const unsubPlans = onSnapshot(qPlans, (snapshot) => {
+      setPlans(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
     return () => {
       unsubServices();
       unsubOrders();
+      unsubPlans();
     };
   }, [user]);
 
@@ -77,7 +87,15 @@ const Dashboard: React.FC = () => {
     }
   }, [selectedCategory, filteredServices]);
 
-  const totalPrice = selectedService ? (quantity * selectedService.pricePer1000) / 1000 : 0;
+  const getDiscountedPrice = (price: number) => {
+    if (!profile?.planId) return price;
+    const plan = plans.find(p => p.id === profile.planId);
+    if (!plan || !plan.isActive) return price;
+    return price * (1 - plan.discountPercentage / 100);
+  };
+
+  const basePrice = selectedService ? (quantity * selectedService.pricePer1000) / 1000 : 0;
+  const totalPrice = getDiscountedPrice(basePrice);
 
   const handleOrder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,6 +119,7 @@ const Dashboard: React.FC = () => {
       // Use a transaction to deduct balance and create order securely
       const userRef = doc(db, 'users', user.uid);
       const newOrderRef = doc(collection(db, 'orders'));
+      const newTransactionRef = doc(collection(db, 'transactions'));
 
       await runTransaction(db, async (transaction) => {
         const userDoc = await transaction.get(userRef);
@@ -120,6 +139,13 @@ const Dashboard: React.FC = () => {
           quantity,
           totalPrice,
           status: 'Pending',
+          createdAt: serverTimestamp()
+        });
+        transaction.set(newTransactionRef, {
+          userId: user.uid,
+          amount: -totalPrice,
+          type: 'order',
+          description: `Order: ${selectedService.name} (Qty: ${quantity})`,
           createdAt: serverTimestamp()
         });
       });
@@ -204,7 +230,7 @@ const Dashboard: React.FC = () => {
                   >
                     {filteredServices.map(svc => (
                       <option key={svc.id} value={svc.id}>
-                        {svc.name} - {svc.pricePer1000} OMR / 1k
+                        {svc.name} - {getDiscountedPrice(svc.pricePer1000).toFixed(3)} OMR / 1k
                       </option>
                     ))}
                   </select>
@@ -246,7 +272,12 @@ const Dashboard: React.FC = () => {
 
                 <div className="mb-6 p-4 bg-slate-900 rounded-xl flex justify-between items-center shadow-inner">
                   <span className="text-slate-300 font-medium">Total Charge:</span>
-                  <span className="text-2xl font-bold text-white">{totalPrice.toFixed(3)} OMR</span>
+                  <div className="text-right">
+                    <span className="text-2xl font-bold text-white block">{totalPrice.toFixed(3)} OMR</span>
+                    {totalPrice < basePrice && (
+                      <span className="text-sm text-slate-400 line-through block">{basePrice.toFixed(3)} OMR</span>
+                    )}
+                  </div>
                 </div>
 
                 <button 
@@ -295,7 +326,18 @@ const Dashboard: React.FC = () => {
                       orders.map((order) => (
                         <tr key={order.id} className="hover:bg-slate-50 transition-colors">
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-500">#{order.id.slice(0, 6)}</td>
-                          <td className="px-6 py-4 text-sm text-slate-900 font-medium">{order.serviceName}</td>
+                          <td className="px-6 py-4 text-sm text-slate-900 font-medium">
+                            <div className="flex items-center">
+                              {services.find(s => s.id === order.serviceId)?.imageUrl ? (
+                                <img src={services.find(s => s.id === order.serviceId)?.imageUrl} alt={order.serviceName} className="w-8 h-8 rounded object-cover mr-3" />
+                              ) : (
+                                <div className="w-8 h-8 rounded bg-slate-100 flex items-center justify-center mr-3">
+                                  <ShoppingBag className="w-4 h-4 text-slate-400" />
+                                </div>
+                              )}
+                              {order.serviceName}
+                            </div>
+                          </td>
                           <td className="px-6 py-4 text-sm text-blue-600 truncate max-w-[150px]">
                             <a href={order.link} target="_blank" rel="noopener noreferrer" className="hover:underline">
                               {order.link}

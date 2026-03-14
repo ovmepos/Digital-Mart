@@ -10,6 +10,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
 import Services from './pages/Services';
+import Plans from './pages/Plans';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
@@ -20,6 +21,9 @@ import Refund from './pages/Refund';
 import Rules from './pages/Rules';
 import Contact from './pages/Contact';
 import BusinessProfile from './pages/BusinessProfile';
+
+import BusinessProfileSettings from './pages/BusinessProfileSettings';
+import PublicProfile from './pages/PublicProfile';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
@@ -38,6 +42,7 @@ export default function App() {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/services" element={<Services />} />
+              <Route path="/plans" element={<Plans />} />
               <Route path="/login" element={<Login />} />
               <Route path="/policy" element={<Policy />} />
               <Route path="/refund" element={<Refund />} />
@@ -76,6 +81,15 @@ export default function App() {
                   </ProtectedRoute>
                 } 
               />
+              <Route 
+                path="/profile/settings" 
+                element={
+                  <ProtectedRoute>
+                    <BusinessProfileSettings />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route path="/:username" element={<PublicProfile />} />
             </Routes>
           </div>
           <Footer />
