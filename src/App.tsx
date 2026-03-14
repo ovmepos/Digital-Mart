@@ -24,6 +24,8 @@ import BusinessProfile from './pages/BusinessProfile';
 
 import BusinessProfileSettings from './pages/BusinessProfileSettings';
 import PublicProfile from './pages/PublicProfile';
+import Cart from './pages/Cart';
+import Wishlist from './pages/Wishlist';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
@@ -90,6 +92,22 @@ export default function App() {
                 } 
               />
               <Route path="/:username" element={<PublicProfile />} />
+              <Route 
+                path="/cart" 
+                element={
+                  <ProtectedRoute>
+                    <Cart />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/wishlist" 
+                element={
+                  <ProtectedRoute>
+                    <Wishlist />
+                  </ProtectedRoute>
+                } 
+              />
             </Routes>
           </div>
           <Footer />

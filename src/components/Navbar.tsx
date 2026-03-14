@@ -1,12 +1,27 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, Wallet, LayoutDashboard, Settings, Menu, X, ShoppingBag, Instagram, ShoppingCart, UserCircle, Crown } from 'lucide-react';
+import { LogOut, Wallet, LayoutDashboard, Settings, Menu, X, ShoppingBag, Instagram, ShoppingCart, UserCircle, Crown, Heart } from 'lucide-react';
+import { db } from '../firebase';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 
 const Navbar: React.FC = () => {
   const { user, profile, logout } = useAuth();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [cartCount, setCartCount] = React.useState(0);
+
+  React.useEffect(() => {
+    if (!user) {
+      setCartCount(0);
+      return;
+    }
+    const q = query(collection(db, 'cart'), where('userId', '==', user.uid));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setCartCount(snapshot.size);
+    });
+    return () => unsubscribe();
+  }, [user]);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -44,6 +59,13 @@ const Navbar: React.FC = () => {
                 <Crown className="w-4 h-4 mr-1.5" />
                 Plans
               </Link>
+              <Link 
+                to="/wishlist" 
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/wishlist') ? 'border-blue-500 text-slate-900' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'}`}
+              >
+                <Heart className="w-4 h-4 mr-1.5" />
+                Wishlist
+              </Link>
             </div>
           </div>
 
@@ -72,6 +94,14 @@ const Navbar: React.FC = () => {
                 <Link to="/wallet" className="flex items-center bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-full text-sm font-semibold border border-emerald-100 transition-colors cursor-pointer">
                   <Wallet className="w-4 h-4 mr-1.5" />
                   {profile.walletBalance.toFixed(3)} OMR
+                </Link>
+                <Link to="/cart" className="relative p-2 text-slate-500 hover:text-blue-600 transition-colors">
+                  <ShoppingCart className="w-6 h-6" />
+                  {cartCount > 0 && (
+                    <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                      {cartCount}
+                    </span>
+                  )}
                 </Link>
                 <button
                   onClick={logout}
@@ -117,6 +147,12 @@ const Navbar: React.FC = () => {
             </Link>
             <Link to="/plans" className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/plans') ? 'bg-blue-50 border-blue-500 text-blue-700' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800'}`}>
               Plans
+            </Link>
+            <Link to="/wishlist" className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/wishlist') ? 'bg-blue-50 border-blue-500 text-blue-700' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800'}`}>
+              Wishlist
+            </Link>
+            <Link to="/cart" className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${isActive('/cart') ? 'bg-blue-50 border-blue-500 text-blue-700' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800'}`}>
+              Cart ({cartCount})
             </Link>
             
             {user && profile ? (

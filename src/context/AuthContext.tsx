@@ -10,6 +10,8 @@ interface UserProfile {
   walletBalance: number;
   createdAt: any;
   planId?: string;
+  planExpiresAt?: any;
+  wishlist?: string[];
 }
 
 interface AuthContextType {

@@ -75,12 +75,14 @@ service cloud.firestore {
     // ===============================================================
     
     function isValidUser(data) {
-      return hasOnlyAllowedFields(['name', 'email', 'role', 'walletBalance', 'createdAt', 'planId']) &&
+      return hasOnlyAllowedFields(['name', 'email', 'role', 'walletBalance', 'createdAt', 'planId', 'planExpiresAt', 'wishlist']) &&
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
              data.email is string && isValidEmail(data.email) &&
              data.role in ['admin', 'user'] &&
              data.walletBalance is number && data.walletBalance >= 0 &&
              (!('planId' in data) || (data.planId is string && data.planId.size() < 50)) &&
+             (!('planExpiresAt' in data) || data.planExpiresAt is timestamp) &&
+             (!('wishlist' in data) || (data.wishlist is list && data.wishlist.size() <= 100)) &&
              data.createdAt is timestamp;
     }
     
@@ -130,14 +132,51 @@ service cloud.firestore {
     }
 
     function isValidSubscriptionPlan(data) {
-      return hasOnlyAllowedFields(['name', 'discountPercentage', 'price', 'description', 'isActive', 'createdAt', 'updatedAt']) &&
+      return hasOnlyAllowedFields(['name', 'discountPercentage', 'price', 'description', 'isActive', 'createdAt', 'updatedAt', 'duration']) &&
              data.name is string && data.name.size() > 0 && data.name.size() < 50 &&
              data.discountPercentage is number && data.discountPercentage >= 0 && data.discountPercentage <= 100 &&
              data.price is number && data.price >= 0 &&
+             data.duration in ['monthly', 'yearly'] &&
              data.description is string && data.description.size() < 500 &&
              data.isActive is bool &&
              data.createdAt is timestamp &&
              data.updatedAt is timestamp;
+    }
+
+    function isValidManualTransfer(data) {
+      return hasOnlyAllowedFields(['userId', 'amount', 'proofUrl', 'status', 'adminNotes', 'createdAt']) &&
+             data.userId is string &&
+             data.amount is number && data.amount > 0 &&
+             data.proofUrl is string && data.proofUrl.size() < 500000 &&
+             data.status in ['pending', 'approved', 'rejected'] &&
+             (!('adminNotes' in data) || (data.adminNotes is string && data.adminNotes.size() < 500)) &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidCategory(data) {
+      return hasOnlyAllowedFields(['name', 'imageUrl', 'isActive', 'createdAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() < 500000)) &&
+             data.isActive is bool &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidServiceType(data) {
+      return hasOnlyAllowedFields(['name', 'isActive', 'createdAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.isActive is bool &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidCartItem(data) {
+      return hasOnlyAllowedFields(['userId', 'serviceId', 'serviceName', 'quantity', 'link', 'price', 'createdAt']) &&
+             data.userId is string &&
+             data.serviceId is string &&
+             data.serviceName is string &&
+             data.quantity is number && data.quantity > 0 &&
+             data.link is string &&
+             data.price is number &&
+             data.createdAt is timestamp;
     }
     
     function isValidBusinessProfile(data) {
@@ -170,12 +209,11 @@ service cloud.firestore {
       allow create: if isOwner(userId) && isValidUser(request.resource.data) && 
                     ((request.resource.data.role == 'user' && request.resource.data.walletBalance == 0) || isAdmin());
                     
-      // Users can update their own profile (name only), admins can update anything
+      // Users can update their own profile (name, wishlist, plan, balance deduction), admins can update anything
       allow update: if (isOwner(userId) && isValidUser(request.resource.data) && 
                         request.resource.data.role == resource.data.role && 
-                        request.resource.data.walletBalance == resource.data.walletBalance &&
-                        request.resource.data.createdAt == resource.data.createdAt &&
-                        request.resource.data.get('planId', '') == resource.data.get('planId', '')) || 
+                        request.resource.data.walletBalance <= resource.data.walletBalance &&
+                        request.resource.data.createdAt == resource.data.createdAt) || 
                        (isAdmin() && isValidUser(request.resource.data));
                        
       allow delete: if isAdmin();
@@ -241,6 +279,39 @@ service cloud.firestore {
     match /subscriptionPlans/{planId} {
       allow read: if isAuthenticated();
       allow create, update: if isAdmin() && isValidSubscriptionPlan(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /manualTransfers/{transferId} {
+      allow read: if (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
+      allow create: if isAuthenticated() && isValidManualTransfer(request.resource.data) && 
+                    request.resource.data.userId == request.auth.uid &&
+                    request.resource.data.status == 'pending';
+      allow update: if isAdmin() && isValidManualTransfer(request.resource.data) &&
+                    request.resource.data.userId == resource.data.userId &&
+                    request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isAdmin();
+    }
+
+    match /cart/{cartItemId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && isValidCartItem(request.resource.data) && 
+                    request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && isValidCartItem(request.resource.data) && 
+                    request.resource.data.userId == request.auth.uid &&
+                    request.resource.data.userId == resource.data.userId;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /categories/{categoryId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdmin() && isValidCategory(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /serviceTypes/{typeId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdmin() && isValidServiceType(request.resource.data);
       allow delete: if isAdmin();
     }
   }

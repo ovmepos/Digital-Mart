@@ -23,6 +23,20 @@
           "type": "number",
           "description": "User's current wallet balance in OMR"
         },
+        "planId": {
+          "type": "string",
+          "description": "ID of the active subscription plan"
+        },
+        "planExpiresAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the subscription plan expires"
+        },
+        "wishlist": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of service IDs in the user's wishlist"
+        },
         "createdAt": {
           "type": "string",
           "format": "date-time",
@@ -156,6 +170,74 @@
         }
       },
       "required": ["userId", "amount", "type", "description", "createdAt"]
+    },
+    "ManualTransfer": {
+      "title": "Manual Transfer",
+      "description": "A record of a manual bank transfer proof",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "amount": { "type": "number" },
+        "proofUrl": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "adminNotes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "amount", "proofUrl", "status", "createdAt"]
+    },
+    "CartItem": {
+      "title": "Cart Item",
+      "description": "An item in a user's shopping cart",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "serviceId": { "type": "string" },
+        "serviceName": { "type": "string" },
+        "quantity": { "type": "number" },
+        "link": { "type": "string" },
+        "price": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "serviceId", "serviceName", "quantity", "link", "price", "createdAt"]
+    },
+    "SubscriptionPlan": {
+      "title": "Subscription Plan",
+      "description": "A subscription plan for discounts",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "discountPercentage": { "type": "number" },
+        "price": { "type": "number" },
+        "duration": { "type": "string", "enum": ["monthly", "yearly"] },
+        "description": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "discountPercentage", "price", "duration", "isActive", "createdAt", "updatedAt"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "A category for services (e.g., Instagram, TikTok)",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "isActive", "createdAt"]
+    },
+    "ServiceType": {
+      "title": "Service Type",
+      "description": "A type for services (e.g., Followers, Likes)",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "isActive", "createdAt"]
     }
   },
   "firestore": {
@@ -182,6 +264,36 @@
         "$ref": "#/entities/Transaction"
       },
       "description": "Stores user wallet transactions"
+    },
+    "/manualTransfers/{transferId}": {
+      "schema": {
+        "$ref": "#/entities/ManualTransfer"
+      },
+      "description": "Stores manual transfer proofs"
+    },
+    "/cart/{cartItemId}": {
+      "schema": {
+        "$ref": "#/entities/CartItem"
+      },
+      "description": "Stores user cart items"
+    },
+    "/subscriptionPlans/{planId}": {
+      "schema": {
+        "$ref": "#/entities/SubscriptionPlan"
+      },
+      "description": "Stores subscription plans"
+    },
+    "/categories/{categoryId}": {
+      "schema": {
+        "$ref": "#/entities/Category"
+      },
+      "description": "Stores service categories"
+    },
+    "/serviceTypes/{typeId}": {
+      "schema": {
+        "$ref": "#/entities/ServiceType"
+      },
+      "description": "Stores service types"
     }
   }
 }

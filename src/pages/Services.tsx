@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, query, where, getDocs, doc, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { motion } from 'motion/react';
-import { Search, Filter, ShoppingCart, Star, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { Search, Filter, ShoppingCart, Star, X, CheckCircle, AlertCircle, Heart, Plus, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { addDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 
 interface Service {
   id: string;
@@ -37,17 +38,20 @@ const Services: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [plans, setPlans] = useState<any[]>([]);
+  const [categoriesData, setCategoriesData] = useState<any[]>([]);
   
   // Buy Modal State
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [link, setLink] = useState('');
   const [quantity, setQuantity] = useState<number>(100);
   const [orderLoading, setOrderLoading] = useState(false);
+  const [cartLoading, setCartLoading] = useState<string | null>(null);
+  const [wishlistLoading, setWishlistLoading] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    const fetchServices = async () => {
+    const fetchData = async () => {
       try {
         const q = query(collection(db, 'services'), where('isActive', '==', true));
         const snapshot = await getDocs(q);
@@ -56,17 +60,26 @@ const Services: React.FC = () => {
         
         const plansSnapshot = await getDocs(collection(db, 'subscriptionPlans'));
         setPlans(plansSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
+        const categoriesSnapshot = await getDocs(collection(db, 'categories'));
+        setCategoriesData(categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       } catch (error) {
-        console.error("Error fetching services:", error);
+        console.error("Error fetching data:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchServices();
+    fetchData();
   }, []);
 
-  const categories = ['All', ...Array.from(new Set(services.map(s => s.category)))];
+  const categories = ['All', ...categoriesData.filter(c => c.isActive).map(c => c.name)];
+
+  const getServiceCategoryImage = (categoryName: string) => {
+    const cat = categoriesData.find(c => c.name === categoryName);
+    if (cat?.imageUrl) return cat.imageUrl;
+    return getCategoryImage(categoryName);
+  };
 
   const filteredServices = services.filter(service => {
     const matchesSearch = service.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -158,6 +171,58 @@ const Services: React.FC = () => {
     }
   };
 
+  const handleAddToCart = async (service: Service) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    setCartLoading(service.id);
+    try {
+      await addDoc(collection(db, 'cart'), {
+        userId: user.uid,
+        serviceId: service.id,
+        serviceName: service.name,
+        quantity: service.minQuantity,
+        price: service.pricePer1000,
+        createdAt: serverTimestamp()
+      });
+      setSuccess('Added to cart!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err: any) {
+      setError('Failed to add to cart: ' + err.message);
+    } finally {
+      setCartLoading(null);
+    }
+  };
+
+  const toggleWishlist = async (serviceId: string) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    setWishlistLoading(serviceId);
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      const isInWishlist = profile?.wishlist?.includes(serviceId);
+
+      if (isInWishlist) {
+        await updateDoc(userRef, {
+          wishlist: arrayRemove(serviceId)
+        });
+      } else {
+        await updateDoc(userRef, {
+          wishlist: arrayUnion(serviceId)
+        });
+      }
+    } catch (err: any) {
+      console.error("Wishlist error:", err);
+    } finally {
+      setWishlistLoading(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -230,7 +295,7 @@ const Services: React.FC = () => {
                   >
                     <div className="h-48 overflow-hidden relative">
                       <img 
-                        src={service.imageUrl || getCategoryImage(service.category)} 
+                        src={service.imageUrl || getServiceCategoryImage(service.category)} 
                         alt={service.name} 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
@@ -244,6 +309,21 @@ const Services: React.FC = () => {
                           </span>
                         )}
                       </div>
+                      <button 
+                        onClick={() => toggleWishlist(service.id)}
+                        disabled={wishlistLoading === service.id}
+                        className={`absolute top-3 right-3 p-2 rounded-xl backdrop-blur-sm transition-colors shadow-sm ${
+                          profile?.wishlist?.includes(service.id)
+                            ? 'bg-red-500 text-white'
+                            : 'bg-white/90 text-slate-400 hover:text-red-500'
+                        }`}
+                      >
+                        {wishlistLoading === service.id ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <Heart className={`w-5 h-5 ${profile?.wishlist?.includes(service.id) ? 'fill-current' : ''}`} />
+                        )}
+                      </button>
                     </div>
                     
                     <div className="p-5 flex-grow flex flex-col">
@@ -296,12 +376,27 @@ const Services: React.FC = () => {
                             )}
                           </div>
                         </div>
-                        <button 
-                          onClick={() => handleBuyClick(service)}
-                          className="w-12 h-12 bg-slate-900 text-white rounded-xl flex items-center justify-center hover:bg-blue-600 transition-colors shadow-md"
-                        >
-                          <ShoppingCart className="w-5 h-5" />
-                        </button>
+                        <div className="flex space-x-2">
+                          <button 
+                            onClick={() => handleAddToCart(service)}
+                            disabled={cartLoading === service.id}
+                            className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center hover:bg-blue-100 transition-colors border border-blue-100"
+                            title="Add to Cart"
+                          >
+                            {cartLoading === service.id ? (
+                              <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                              <Plus className="w-5 h-5" />
+                            )}
+                          </button>
+                          <button 
+                            onClick={() => handleBuyClick(service)}
+                            className="w-12 h-12 bg-slate-900 text-white rounded-xl flex items-center justify-center hover:bg-blue-600 transition-colors shadow-md"
+                            title="Buy Now"
+                          >
+                            <ShoppingCart className="w-5 h-5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </motion.div>
@@ -327,7 +422,7 @@ const Services: React.FC = () => {
             
             <div className="p-6">
               <div className="flex gap-4 mb-4 pb-4 border-b border-slate-100">
-                <img src={getCategoryImage(selectedService.category)} alt="Product" className="w-16 h-16 rounded-xl object-cover shadow-sm" />
+                <img src={getServiceCategoryImage(selectedService.category)} alt="Product" className="w-16 h-16 rounded-xl object-cover shadow-sm" />
                 <div>
                   <h4 className="font-bold text-slate-900 line-clamp-2 text-sm">{selectedService.name}</h4>
                   <div className="flex items-baseline space-x-2 mt-1">

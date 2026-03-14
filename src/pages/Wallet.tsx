@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase';
 import { doc, collection, runTransaction, serverTimestamp, onSnapshot, query } from 'firebase/firestore';
-import { Wallet as WalletIcon, CreditCard, CheckCircle, AlertCircle, Loader2, Building2, MessageCircle } from 'lucide-react';
+import { Wallet as WalletIcon, CreditCard, CheckCircle, AlertCircle, Loader2, Building2, MessageCircle, Upload, QrCode } from 'lucide-react';
+import { addDoc } from 'firebase/firestore';
 
 const Wallet: React.FC = () => {
   const { user, profile } = useAuth();
@@ -12,6 +13,8 @@ const Wallet: React.FC = () => {
   const [error, setError] = useState('');
   const [gateways, setGateways] = useState<any[]>([]);
   const [selectedGateway, setSelectedGateway] = useState<string>('');
+  const [proofImage, setProofImage] = useState<string>('');
+  const [manualPending, setManualPending] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, 'paymentGateways'));
@@ -40,15 +43,24 @@ const Wallet: React.FC = () => {
     }
 
     if (selectedGateway === 'manual') {
-      // For manual, we don't process immediately. We just show instructions or redirect to WhatsApp.
-      const manualGw = gateways.find(g => g.id === 'manual');
-      if (manualGw) {
-        const msg = `Hello, I want to add ${amount} OMR to my wallet. My User ID is: ${user.uid}`;
-        const whatsappUrl = `https://wa.me/${manualGw.config.whatsappNumber}?text=${encodeURIComponent(msg)}`;
-        window.open(whatsappUrl, '_blank');
+      setLoading(true);
+      try {
+        await addDoc(collection(db, 'manualTransfers'), {
+          userId: user.uid,
+          amount: amount,
+          proofUrl: proofImage,
+          status: 'pending',
+          createdAt: serverTimestamp()
+        });
         setSuccess(true);
-        return;
+        setManualPending(true);
+        setProofImage('');
+      } catch (err: any) {
+        setError('Failed to submit transfer: ' + err.message);
+      } finally {
+        setLoading(false);
       }
+      return;
     }
 
     setLoading(true);
@@ -214,29 +226,99 @@ const Wallet: React.FC = () => {
                       </p>
                     </div>
                     {gateways.find(g => g.id === 'manual')?.config?.upiId && (
-                      <div className="bg-white p-3 rounded border border-purple-100">
+                      <div className="bg-white p-3 rounded border border-purple-100 mb-3">
                         <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">UPI ID</p>
                         <p className="text-sm font-mono text-slate-800">
                           {gateways.find(g => g.id === 'manual')?.config?.upiId}
                         </p>
                       </div>
                     )}
+
+                    {gateways.find(g => g.id === 'manual')?.config?.qrCodeUrl && (
+                      <div className="bg-white p-4 rounded border border-purple-100 mb-4 flex flex-col items-center">
+                        <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">Scan QR Code</p>
+                        <img 
+                          src={gateways.find(g => g.id === 'manual')?.config?.qrCodeUrl} 
+                          alt="Payment QR" 
+                          className="w-48 h-48 object-contain border rounded p-2"
+                        />
+                      </div>
+                    )}
+
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-purple-900 mb-2">
+                        Upload Payment Proof (Screenshot)
+                      </label>
+                      <div className="flex items-center space-x-4">
+                        {proofImage && (
+                          <img src={proofImage} alt="Proof" className="w-16 h-16 object-cover rounded border" />
+                        )}
+                        <label className="flex-1 cursor-pointer bg-white border border-purple-200 border-dashed rounded-xl p-4 flex items-center justify-center hover:bg-purple-50 transition-colors">
+                          <Upload className="w-5 h-5 text-purple-400 mr-2" />
+                          <span className="text-sm text-purple-600 font-medium">
+                            {proofImage ? 'Change Screenshot' : 'Upload Screenshot'}
+                          </span>
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden" 
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              const reader = new FileReader();
+                              reader.onload = (event) => {
+                                const img = new Image();
+                                img.onload = () => {
+                                  const canvas = document.createElement('canvas');
+                                  const MAX_WIDTH = 800;
+                                  const MAX_HEIGHT = 800;
+                                  let width = img.width;
+                                  let height = img.height;
+                                  if (width > height) {
+                                    if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                                  } else {
+                                    if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                                  }
+                                  canvas.width = width; canvas.height = height;
+                                  const ctx = canvas.getContext('2d');
+                                  ctx?.drawImage(img, 0, 0, width, height);
+                                  setProofImage(canvas.toDataURL('image/jpeg', 0.6));
+                                };
+                                img.src = event.target?.result as string;
+                              };
+                              reader.readAsDataURL(file);
+                            }}
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between">
+                      <a 
+                        href={`https://wa.me/${gateways.find(g => g.id === 'manual')?.config?.whatsappNumber}?text=${encodeURIComponent(`Hello, I've just submitted a manual transfer of ${amount} OMR. My User ID is: ${user?.uid}`)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs text-purple-600 hover:text-purple-800 flex items-center"
+                      >
+                        <MessageCircle className="w-3 h-3 mr-1" /> Need help? Contact WhatsApp
+                      </a>
+                    </div>
                   </div>
                 )}
               </div>
 
               <button
                 type="submit"
-                disabled={loading || gateways.length === 0}
+                disabled={loading || gateways.length === 0 || (selectedGateway === 'manual' && !proofImage)}
                 className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 disabled:cursor-not-allowed transition-colors"
               >
                 {loading ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Processing Payment...
+                    Processing...
                   </>
                 ) : (
-                  selectedGateway === 'manual' ? 'Contact via WhatsApp' : `Pay ${amount.toFixed(3)} OMR`
+                  selectedGateway === 'manual' ? 'Submit Payment Proof' : `Pay ${amount.toFixed(3)} OMR`
                 )}
               </button>
             </form>

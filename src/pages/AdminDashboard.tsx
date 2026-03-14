@@ -3,11 +3,11 @@ import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase';
 import { collection, query, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp, runTransaction, setDoc } from 'firebase/firestore';
 import { Navigate } from 'react-router-dom';
-import { Users, ShoppingCart, Settings, PlusCircle, Trash2, CreditCard, Edit2, Image as ImageIcon, Wallet, Crown } from 'lucide-react';
+import { Users, ShoppingCart, Settings, PlusCircle, Trash2, CreditCard, Edit2, Image as ImageIcon, Wallet, Crown, Layers, Tag } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
   const { profile, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState<'orders' | 'users' | 'services' | 'transactions' | 'gateways' | 'plans'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'users' | 'services' | 'transactions' | 'gateways' | 'plans' | 'manual_transfers' | 'categories' | 'types'>('orders');
   
   const [orders, setOrders] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -15,12 +15,23 @@ const AdminDashboard: React.FC = () => {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [gateways, setGateways] = useState<any[]>([]);
   const [plans, setPlans] = useState<any[]>([]);
+  const [manualTransfers, setManualTransfers] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [serviceTypes, setServiceTypes] = useState<any[]>([]);
 
   // New Service Form
   const [newService, setNewService] = useState({
     name: '', category: '', pricePer1000: 0, minQuantity: 100, maxQuantity: 10000, description: '', averageTime: '', features: '', type: 'Service', isActive: true, imageUrl: ''
   });
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
+
+  // New Category Form
+  const [newCategory, setNewCategory] = useState({ name: '', imageUrl: '', isActive: true });
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+
+  // New Type Form
+  const [newType, setNewType] = useState({ name: '', isActive: true });
+  const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
 
   useEffect(() => {
     if (profile?.role !== 'admin') return;
@@ -49,6 +60,18 @@ const AdminDashboard: React.FC = () => {
       setPlans(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
+    const unsubManualTransfers = onSnapshot(query(collection(db, 'manualTransfers')), (snapshot) => {
+      setManualTransfers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
+    const unsubCategories = onSnapshot(query(collection(db, 'categories')), (snapshot) => {
+      setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
+    const unsubTypes = onSnapshot(query(collection(db, 'serviceTypes')), (snapshot) => {
+      setServiceTypes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
     return () => {
       unsubOrders();
       unsubUsers();
@@ -56,6 +79,9 @@ const AdminDashboard: React.FC = () => {
       unsubTransactions();
       unsubGateways();
       unsubPlans();
+      unsubManualTransfers();
+      unsubCategories();
+      unsubTypes();
     };
   }, [profile]);
 
@@ -227,6 +253,44 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleApproveManualTransfer = async (transfer: any) => {
+    try {
+      const userRef = doc(db, 'users', transfer.userId);
+      const transferRef = doc(db, 'manualTransfers', transfer.id);
+      const newTransactionRef = doc(collection(db, 'transactions'));
+
+      await runTransaction(db, async (transaction) => {
+        const userDoc = await transaction.get(userRef);
+        if (!userDoc.exists()) throw new Error("User not found");
+
+        const currentBalance = userDoc.data().walletBalance || 0;
+        transaction.update(userRef, { walletBalance: currentBalance + transfer.amount });
+        transaction.update(transferRef, { status: 'approved', updatedAt: serverTimestamp() });
+        transaction.set(newTransactionRef, {
+          userId: transfer.userId,
+          amount: transfer.amount,
+          type: 'topup',
+          description: `Manual Transfer Approved`,
+          createdAt: serverTimestamp()
+        });
+      });
+    } catch (err) {
+      console.error("Error approving transfer:", err);
+    }
+  };
+
+  const handleRejectManualTransfer = async (transferId: string, notes: string) => {
+    try {
+      await updateDoc(doc(db, 'manualTransfers', transferId), {
+        status: 'rejected',
+        adminNotes: notes,
+        updatedAt: serverTimestamp()
+      });
+    } catch (err) {
+      console.error("Error rejecting transfer:", err);
+    }
+  };
+
   const [newPlan, setNewPlan] = useState({
     name: '', discountPercentage: 0, price: 0, description: '', isActive: true
   });
@@ -259,6 +323,64 @@ const AdminDashboard: React.FC = () => {
     } catch (err) {
       console.error("Error updating plan:", err);
     }
+  };
+
+  const handleCategorySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingCategoryId) {
+        await updateDoc(doc(db, 'categories', editingCategoryId), newCategory);
+        setEditingCategoryId(null);
+      } else {
+        await addDoc(collection(db, 'categories'), { ...newCategory, createdAt: serverTimestamp() });
+      }
+      setNewCategory({ name: '', imageUrl: '', isActive: true });
+    } catch (err) {
+      console.error("Error saving category:", err);
+    }
+  };
+
+  const handleTypeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingTypeId) {
+        await updateDoc(doc(db, 'serviceTypes', editingTypeId), newType);
+        setEditingTypeId(null);
+      } else {
+        await addDoc(collection(db, 'serviceTypes'), { ...newType, createdAt: serverTimestamp() });
+      }
+      setNewType({ name: '', isActive: true });
+    } catch (err) {
+      console.error("Error saving type:", err);
+    }
+  };
+
+  const handleCategoryImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 200;
+        const MAX_HEIGHT = 200;
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+        } else {
+          if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        setNewCategory({ ...newCategory, imageUrl: canvas.toDataURL('image/jpeg', 0.7) });
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleEditPlan = (plan: any) => {
@@ -328,6 +450,24 @@ const AdminDashboard: React.FC = () => {
           className={`pb-2 px-4 font-medium flex items-center ${activeTab === 'plans' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
         >
           <Crown className="w-5 h-5 mr-2" /> Plans
+        </button>
+        <button 
+          onClick={() => setActiveTab('manual_transfers')}
+          className={`pb-2 px-4 font-medium flex items-center ${activeTab === 'manual_transfers' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          <ImageIcon className="w-5 h-5 mr-2" /> Manual Pay
+        </button>
+        <button 
+          onClick={() => setActiveTab('categories')}
+          className={`pb-2 px-4 font-medium flex items-center ${activeTab === 'categories' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          <Layers className="w-5 h-5 mr-2" /> Categories
+        </button>
+        <button 
+          onClick={() => setActiveTab('types')}
+          className={`pb-2 px-4 font-medium flex items-center ${activeTab === 'types' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          <Tag className="w-5 h-5 mr-2" /> Types
         </button>
       </div>
 
@@ -472,13 +612,30 @@ const AdminDashboard: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-700">Category</label>
-                  <input type="text" required value={newService.category} onChange={e => setNewService({...newService, category: e.target.value})} className="w-full border p-2 rounded text-sm" placeholder="e.g., Instagram" />
+                  <select 
+                    required 
+                    value={newService.category} 
+                    onChange={e => setNewService({...newService, category: e.target.value})} 
+                    className="w-full border p-2 rounded text-sm"
+                  >
+                    <option value="">Select Category</option>
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.name}>{cat.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700">Type</label>
-                  <select value={newService.type} onChange={e => setNewService({...newService, type: e.target.value})} className="w-full border p-2 rounded text-sm">
-                    <option value="Service">Service</option>
-                    <option value="Product">Product</option>
+                  <select 
+                    required 
+                    value={newService.type} 
+                    onChange={e => setNewService({...newService, type: e.target.value})} 
+                    className="w-full border p-2 rounded text-sm"
+                  >
+                    <option value="">Select Type</option>
+                    {serviceTypes.map(t => (
+                      <option key={t.id} value={t.name}>{t.name}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -777,6 +934,50 @@ const AdminDashboard: React.FC = () => {
                       <input type="text" name="whatsappNumber" defaultValue={gw.config.whatsappNumber} className="w-full border p-2 rounded text-sm" placeholder="e.g., 96812345678" />
                     </div>
                     <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">QR Code Image</label>
+                      <div className="flex items-center space-x-4">
+                        {gw.config.qrCodeUrl && (
+                          <img src={gw.config.qrCodeUrl} alt="QR Code" className="w-12 h-12 object-cover rounded border" />
+                        )}
+                        <label className="flex-1 cursor-pointer bg-gray-50 border border-gray-300 border-dashed rounded-md p-2 flex items-center justify-center hover:bg-gray-100">
+                          <ImageIcon className="w-4 h-4 text-gray-400 mr-2" />
+                          <span className="text-xs text-gray-500">Upload QR</span>
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              const reader = new FileReader();
+                              reader.onload = (event) => {
+                                const img = new Image();
+                                img.onload = () => {
+                                  const canvas = document.createElement('canvas');
+                                  const MAX_WIDTH = 400;
+                                  const MAX_HEIGHT = 400;
+                                  let width = img.width;
+                                  let height = img.height;
+                                  if (width > height) {
+                                    if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                                  } else {
+                                    if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                                  }
+                                  canvas.width = width; canvas.height = height;
+                                  const ctx = canvas.getContext('2d');
+                                  ctx?.drawImage(img, 0, 0, width, height);
+                                  const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                                  handleUpdateGateway('manual', { config: { ...gw.config, qrCodeUrl: dataUrl } });
+                                };
+                                img.src = event.target?.result as string;
+                              };
+                              reader.readAsDataURL(file);
+                            }} 
+                            className="hidden" 
+                          />
+                        </label>
+                      </div>
+                    </div>
+                    <div>
                       <label className="block text-xs font-medium text-gray-700">Instructions</label>
                       <textarea name="instructions" defaultValue={gw.config.instructions} className="w-full border p-2 rounded text-sm" rows={2} placeholder="Transfer funds and contact on WhatsApp..."></textarea>
                     </div>
@@ -864,6 +1065,210 @@ const AdminDashboard: React.FC = () => {
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button onClick={() => handleDeletePlan(p.id)} className="text-red-500 hover:text-red-700 p-1">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+      {/* Manual Transfers Tab */}
+      {activeTab === 'manual_transfers' && (
+        <div className="bg-white shadow rounded-lg overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Proof</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {manualTransfers.sort((a, b) => b.createdAt?.toMillis() - a.createdAt?.toMillis()).map(t => (
+                <tr key={t.id}>
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    {users.find(u => u.id === t.userId)?.name || t.userId.slice(0, 6)}
+                  </td>
+                  <td className="px-6 py-4 text-sm font-bold text-gray-900">{t.amount.toFixed(3)} OMR</td>
+                  <td className="px-6 py-4 text-sm">
+                    {t.proofUrl ? (
+                      <a href={t.proofUrl} target="_blank" rel="noreferrer">
+                        <img src={t.proofUrl} alt="Proof" className="w-12 h-12 object-cover rounded border hover:scale-150 transition-transform" />
+                      </a>
+                    ) : 'No Proof'}
+                  </td>
+                  <td className="px-6 py-4 text-sm">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      t.status === 'approved' ? 'bg-green-100 text-green-800' : 
+                      t.status === 'rejected' ? 'bg-red-100 text-red-800' : 
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {t.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500">
+                    {t.createdAt?.toDate().toLocaleString()}
+                  </td>
+                  <td className="px-6 py-4 text-sm flex space-x-2">
+                    {t.status === 'pending' && (
+                      <>
+                        <button 
+                          onClick={() => handleApproveManualTransfer(t)}
+                          className="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700"
+                        >
+                          Approve
+                        </button>
+                        <button 
+                          onClick={() => {
+                            const notes = prompt('Enter rejection reason:');
+                            if (notes) handleRejectManualTransfer(t.id, notes);
+                          }}
+                          className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700"
+                        >
+                          Reject
+                        </button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Categories Tab */}
+      {activeTab === 'categories' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1 bg-white shadow rounded-lg p-6">
+            <h3 className="text-lg font-bold mb-4 flex items-center">
+              {editingCategoryId ? <Edit2 className="w-5 h-5 mr-2" /> : <PlusCircle className="w-5 h-5 mr-2" />}
+              {editingCategoryId ? 'Edit Category' : 'Add Category'}
+            </h3>
+            <form onSubmit={handleCategorySubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-700">Name</label>
+                <input type="text" required value={newCategory.name} onChange={e => setNewCategory({...newCategory, name: e.target.value})} className="w-full border p-2 rounded text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700">Logo / Image</label>
+                <input type="file" accept="image/*" onChange={handleCategoryImageUpload} className="w-full text-xs" />
+                {newCategory.imageUrl && (
+                  <img src={newCategory.imageUrl} alt="Preview" className="mt-2 w-16 h-16 object-cover rounded border" />
+                )}
+              </div>
+              <div className="flex items-center">
+                <input type="checkbox" checked={newCategory.isActive} onChange={e => setNewCategory({...newCategory, isActive: e.target.checked})} className="mr-2" id="catActive" />
+                <label htmlFor="catActive" className="text-sm">Active</label>
+              </div>
+              <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded text-sm font-medium hover:bg-blue-700">
+                {editingCategoryId ? 'Update Category' : 'Add Category'}
+              </button>
+              {editingCategoryId && (
+                <button type="button" onClick={() => { setEditingCategoryId(null); setNewCategory({ name: '', imageUrl: '', isActive: true }); }} className="w-full bg-gray-100 text-gray-600 py-2 rounded text-sm font-medium hover:bg-gray-200 mt-2">
+                  Cancel
+                </button>
+              )}
+            </form>
+          </div>
+          <div className="lg:col-span-2 bg-white shadow rounded-lg overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Logo</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {categories.map(cat => (
+                  <tr key={cat.id}>
+                    <td className="px-6 py-4">
+                      {cat.imageUrl ? (
+                        <img src={cat.imageUrl} alt={cat.name} className="w-10 h-10 object-cover rounded" />
+                      ) : (
+                        <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">No Logo</div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{cat.name}</td>
+                    <td className="px-6 py-4 text-sm">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${cat.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {cat.isActive ? 'Active' : 'Disabled'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm flex space-x-2">
+                      <button onClick={() => { setEditingCategoryId(cat.id); setNewCategory({ name: cat.name, imageUrl: cat.imageUrl || '', isActive: cat.isActive }); }} className="text-blue-500 hover:text-blue-700">
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button onClick={async () => { if(confirm('Delete this category?')) await deleteDoc(doc(db, 'categories', cat.id)); }} className="text-red-500 hover:text-red-700">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Types Tab */}
+      {activeTab === 'types' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1 bg-white shadow rounded-lg p-6">
+            <h3 className="text-lg font-bold mb-4 flex items-center">
+              {editingTypeId ? <Edit2 className="w-5 h-5 mr-2" /> : <PlusCircle className="w-5 h-5 mr-2" />}
+              {editingTypeId ? 'Edit Type' : 'Add Type'}
+            </h3>
+            <form onSubmit={handleTypeSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-700">Name</label>
+                <input type="text" required value={newType.name} onChange={e => setNewType({...newType, name: e.target.value})} className="w-full border p-2 rounded text-sm" />
+              </div>
+              <div className="flex items-center">
+                <input type="checkbox" checked={newType.isActive} onChange={e => setNewType({...newType, isActive: e.target.checked})} className="mr-2" id="typeActive" />
+                <label htmlFor="typeActive" className="text-sm">Active</label>
+              </div>
+              <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded text-sm font-medium hover:bg-blue-700">
+                {editingTypeId ? 'Update Type' : 'Add Type'}
+              </button>
+              {editingTypeId && (
+                <button type="button" onClick={() => { setEditingTypeId(null); setNewType({ name: '', isActive: true }); }} className="w-full bg-gray-100 text-gray-600 py-2 rounded text-sm font-medium hover:bg-gray-200 mt-2">
+                  Cancel
+                </button>
+              )}
+            </form>
+          </div>
+          <div className="lg:col-span-2 bg-white shadow rounded-lg overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {serviceTypes.map(t => (
+                  <tr key={t.id}>
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{t.name}</td>
+                    <td className="px-6 py-4 text-sm">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${t.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {t.isActive ? 'Active' : 'Disabled'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm flex space-x-2">
+                      <button onClick={() => { setEditingTypeId(t.id); setNewType({ name: t.name, isActive: t.isActive }); }} className="text-blue-500 hover:text-blue-700">
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button onClick={async () => { if(confirm('Delete this type?')) await deleteDoc(doc(db, 'serviceTypes', t.id)); }} className="text-red-500 hover:text-red-700">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </td>

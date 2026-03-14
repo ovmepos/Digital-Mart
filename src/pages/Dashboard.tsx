@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp, doc, runTransaction } from 'firebase/firestore';
-import { Clock, CheckCircle, Loader, XCircle, ShoppingBag, TrendingUp, Wallet } from 'lucide-react';
+import { Clock, CheckCircle, Loader, XCircle, ShoppingBag, TrendingUp, Wallet, Crown } from 'lucide-react';
 
 interface Service {
   id: string;
@@ -32,6 +32,7 @@ const Dashboard: React.FC = () => {
   const [services, setServices] = useState<Service[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [plans, setPlans] = useState<any[]>([]);
+  const [categoriesData, setCategoriesData] = useState<any[]>([]);
   
   // Form state
   const [selectedCategory, setSelectedCategory] = useState<string>('');
@@ -70,14 +71,21 @@ const Dashboard: React.FC = () => {
       setPlans(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
+    // Fetch categories
+    const qCategories = query(collection(db, 'categories'), where('isActive', '==', true));
+    const unsubCategories = onSnapshot(qCategories, (snapshot) => {
+      setCategoriesData(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
     return () => {
       unsubServices();
       unsubOrders();
       unsubPlans();
+      unsubCategories();
     };
   }, [user]);
 
-  const categories = Array.from(new Set(services.map(s => s.category)));
+  const categories = categoriesData.length > 0 ? categoriesData.map(c => c.name) : Array.from(new Set(services.map(s => s.category)));
   const filteredServices = services.filter(s => s.category === selectedCategory);
   const selectedService = services.find(s => s.id === selectedServiceId) || filteredServices[0];
 
@@ -180,13 +188,33 @@ const Dashboard: React.FC = () => {
             <h1 className="text-3xl font-extrabold text-slate-900">My Dashboard</h1>
             <p className="text-slate-600 mt-1">Manage your orders and track your digital growth.</p>
           </div>
-          <div className="flex items-center bg-white px-4 py-3 rounded-xl shadow-sm border border-slate-200">
-            <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center mr-3">
-              <Wallet className="w-5 h-5 text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Available Balance</p>
-              <p className="text-xl font-bold text-slate-900">{profile?.walletBalance.toFixed(3)} OMR</p>
+          <div className="flex flex-col sm:flex-row gap-4">
+            {profile?.planId && (
+              <div className="flex items-center bg-blue-600 px-4 py-3 rounded-xl shadow-sm border border-blue-500 text-white">
+                <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center mr-3">
+                  <Crown className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs text-blue-100 font-medium uppercase tracking-wider">Active Plan</p>
+                  <p className="text-sm font-bold">
+                    {plans.find(p => p.id === profile.planId)?.name || 'Premium'}
+                  </p>
+                  {profile.planExpiresAt && (
+                    <p className="text-[10px] text-blue-200">
+                      Expires: {new Date(profile.planExpiresAt.seconds * 1000).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+            <div className="flex items-center bg-white px-4 py-3 rounded-xl shadow-sm border border-slate-200">
+              <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center mr-3">
+                <Wallet className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Available Balance</p>
+                <p className="text-xl font-bold text-slate-900">{profile?.walletBalance.toFixed(3)} OMR</p>
+              </div>
             </div>
           </div>
         </div>

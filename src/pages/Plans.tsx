@@ -13,6 +13,7 @@ interface Plan {
   price: number;
   description: string;
   isActive: boolean;
+  duration: 'monthly' | 'yearly';
 }
 
 const Plans: React.FC = () => {
@@ -70,6 +71,14 @@ const Plans: React.FC = () => {
       const userRef = doc(db, 'users', user.uid);
       const transactionRef = doc(collection(db, 'transactions'));
 
+      // Calculate expiration date
+      const expiresAt = new Date();
+      if (plan.duration === 'yearly') {
+        expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+      } else {
+        expiresAt.setMonth(expiresAt.getMonth() + 1);
+      }
+
       await runTransaction(db, async (transaction) => {
         const userDoc = await transaction.get(userRef);
         if (!userDoc.exists()) throw new Error("User not found");
@@ -81,14 +90,15 @@ const Plans: React.FC = () => {
 
         transaction.update(userRef, { 
           walletBalance: currentBalance - plan.price,
-          planId: plan.id 
+          planId: plan.id,
+          planExpiresAt: expiresAt
         });
 
         transaction.set(transactionRef, {
           userId: user.uid,
-          amount: plan.price,
+          amount: -plan.price, // Should be negative for a deduction
           type: 'order',
-          description: `Subscription to ${plan.name} Plan`,
+          description: `Subscription to ${plan.name} Plan (${plan.duration})`,
           createdAt: serverTimestamp()
         });
       });
@@ -165,7 +175,7 @@ const Plans: React.FC = () => {
                     
                     <div className="flex items-baseline mb-6">
                       <span className="text-4xl font-extrabold text-slate-900">{plan.price}</span>
-                      <span className="text-slate-500 ml-2 font-medium">OMR</span>
+                      <span className="text-slate-500 ml-2 font-medium">OMR / {plan.duration}</span>
                     </div>
                     
                     <div className="bg-emerald-50 rounded-xl p-4 mb-8 border border-emerald-100">
