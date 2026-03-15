@@ -19,6 +19,7 @@ interface Service {
   features?: string[];
   type?: string;
   imageUrl?: string;
+  yoyoServiceId?: string;
 }
 
 const getCategoryImage = (category: string) => {
@@ -39,6 +40,7 @@ const Services: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [plans, setPlans] = useState<any[]>([]);
   const [categoriesData, setCategoriesData] = useState<any[]>([]);
+  const [apiSettings, setApiSettings] = useState<any>(null);
   
   // Buy Modal State
   const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -63,6 +65,11 @@ const Services: React.FC = () => {
 
         const categoriesSnapshot = await getDocs(collection(db, 'categories'));
         setCategoriesData(categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
+        const apiSettingsSnapshot = await getDocs(collection(db, 'apiSettings'));
+        if (!apiSettingsSnapshot.empty) {
+          setApiSettings(apiSettingsSnapshot.docs[0].data());
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -133,6 +140,7 @@ const Services: React.FC = () => {
       const newOrderRef = doc(collection(db, 'orders'));
       const newTransactionRef = doc(collection(db, 'transactions'));
 
+      // 1. Initial Transaction: Deduct balance and create local order
       await runTransaction(db, async (transaction) => {
         const userDoc = await transaction.get(userRef);
         if (!userDoc.exists()) throw new Error("User does not exist!");
@@ -150,7 +158,7 @@ const Services: React.FC = () => {
           link,
           quantity,
           totalPrice,
-          status: 'Pending',
+          status: 'Processing',
           createdAt: serverTimestamp()
         });
         transaction.set(newTransactionRef, {
@@ -161,6 +169,58 @@ const Services: React.FC = () => {
           createdAt: serverTimestamp()
         });
       });
+
+      // 2. If it's a Yoyo service, place the order via API
+      if (selectedService.yoyoServiceId && apiSettings?.yoyoApiKey) {
+        try {
+          const response = await fetch('/api/yoyo/proxy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              key: apiSettings.yoyoApiKey,
+              action: 'add',
+              service: selectedService.yoyoServiceId,
+              link: link,
+              quantity: quantity
+            })
+          });
+          const data = await response.json();
+          
+          if (data.order) {
+            // Update order with Yoyo Order ID
+            await updateDoc(newOrderRef, { 
+              yoyoOrderId: String(data.order),
+              apiResponse: 'success'
+            });
+          } else {
+            // API failed, refund user and cancel order
+            const errorMsg = data.error || 'Unknown API error';
+            await runTransaction(db, async (transaction) => {
+              const userDoc = await transaction.get(userRef);
+              const currentBalance = userDoc.data().walletBalance;
+              transaction.update(userRef, { walletBalance: currentBalance + totalPrice });
+              transaction.update(newOrderRef, { 
+                status: 'Canceled', 
+                error: errorMsg,
+                apiResponse: 'failed'
+              });
+              // Add refund transaction
+              const refundTxRef = doc(collection(db, 'transactions'));
+              transaction.set(refundTxRef, {
+                userId: user.uid,
+                amount: totalPrice,
+                type: 'refund',
+                description: `Refund for failed API order: ${selectedService.name}`,
+                createdAt: serverTimestamp()
+              });
+            });
+            throw new Error(`API Error: ${errorMsg}`);
+          }
+        } catch (apiErr: any) {
+          console.error("API Order Error:", apiErr);
+          throw apiErr;
+        }
+      }
 
       setSuccess('Order placed successfully!');
       setTimeout(() => setSelectedService(null), 2000);

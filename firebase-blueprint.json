@@ -91,6 +91,14 @@
           "type": "boolean",
           "description": "Whether the service is currently available for ordering"
         },
+        "yoyoServiceId": {
+          "type": "string",
+          "description": "The service ID on Yoyomedia API"
+        },
+        "costPrice": {
+          "type": "number",
+          "description": "The original price from Yoyomedia API"
+        },
         "createdAt": {
           "type": "string",
           "format": "date-time",
@@ -133,6 +141,10 @@
           "enum": ["Pending", "Processing", "Completed", "Canceled"],
           "description": "Current status of the order"
         },
+        "yoyoOrderId": {
+          "type": "string",
+          "description": "The order ID returned by Yoyomedia API"
+        },
         "createdAt": {
           "type": "string",
           "format": "date-time",
@@ -140,6 +152,26 @@
         }
       },
       "required": ["userId", "serviceId", "serviceName", "link", "quantity", "totalPrice", "status", "createdAt"]
+    },
+    "ApiSettings": {
+      "title": "API Settings",
+      "description": "Settings for external API integrations",
+      "type": "object",
+      "properties": {
+        "yoyoApiKey": {
+          "type": "string",
+          "description": "API Key for Yoyomedia"
+        },
+        "profitMargin": {
+          "type": "number",
+          "description": "Default profit margin percentage (e.g., 50 for 50%)"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["yoyoApiKey", "profitMargin", "updatedAt"]
     },
     "Transaction": {
       "title": "Transaction",
@@ -294,6 +326,12 @@
         "$ref": "#/entities/ServiceType"
       },
       "description": "Stores service types"
+    },
+    "/apiSettings/{settingsId}": {
+      "schema": {
+        "$ref": "#/entities/ApiSettings"
+      },
+      "description": "Stores external API settings"
     }
   }
 }

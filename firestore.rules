@@ -144,13 +144,14 @@ service cloud.firestore {
     }
 
     function isValidManualTransfer(data) {
-      return hasOnlyAllowedFields(['userId', 'amount', 'proofUrl', 'status', 'adminNotes', 'createdAt']) &&
+      return hasOnlyAllowedFields(['userId', 'amount', 'proofUrl', 'status', 'adminNotes', 'createdAt', 'updatedAt']) &&
              data.userId is string &&
              data.amount is number && data.amount > 0 &&
              data.proofUrl is string && data.proofUrl.size() < 500000 &&
              data.status in ['pending', 'approved', 'rejected'] &&
              (!('adminNotes' in data) || (data.adminNotes is string && data.adminNotes.size() < 500)) &&
-             data.createdAt is timestamp;
+             data.createdAt is timestamp &&
+             (!('updatedAt' in data) || data.updatedAt is timestamp);
     }
 
     function isValidCategory(data) {
