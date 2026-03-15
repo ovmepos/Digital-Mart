@@ -22,7 +22,7 @@ const Home: React.FC = () => {
           >
             <div className="inline-flex items-center px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-sm font-semibold mb-6 border border-blue-500/30">
               <span className="flex h-2 w-2 rounded-full bg-blue-400 mr-2 animate-pulse"></span>
-              The #1 SMM Platform
+              The #1 Digital Social Media Solutions
             </div>
             <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
               Scale your digital <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">presence</span> instantly.

@@ -36,6 +36,7 @@ const AdminDashboard: React.FC = () => {
   const [yoyoServices, setYoyoServices] = useState<any[]>([]);
   const [yoyoSearch, setYoyoSearch] = useState('');
   const [isFetchingYoyoServices, setIsFetchingYoyoServices] = useState(false);
+  const [selectedProofImage, setSelectedProofImage] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState('');
 
@@ -1596,6 +1597,7 @@ const AdminDashboard: React.FC = () => {
                 <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount</th>
                 <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Proof</th>
                 <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Notes</th>
                 <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
                 <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Action</th>
               </tr>
@@ -1617,9 +1619,12 @@ const AdminDashboard: React.FC = () => {
                   </td>
                   <td className="px-8 py-6">
                     {t.proofUrl ? (
-                      <a href={t.proofUrl} target="_blank" rel="noreferrer" className="block w-12 h-12 rounded-xl overflow-hidden border border-slate-200 shadow-sm hover:scale-110 transition-transform">
+                      <button 
+                        onClick={() => setSelectedProofImage(t.proofUrl)}
+                        className="block w-12 h-12 rounded-xl overflow-hidden border border-slate-200 shadow-sm hover:scale-110 transition-transform"
+                      >
                         <img src={t.proofUrl} alt="Proof" className="w-full h-full object-cover" />
-                      </a>
+                      </button>
                     ) : (
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No Proof</span>
                     )}
@@ -1631,6 +1636,21 @@ const AdminDashboard: React.FC = () => {
                         'bg-amber-50 text-amber-600 border border-amber-100'}`}>
                       {t.status}
                     </span>
+                  </td>
+                  <td className="px-8 py-6">
+                    {t.adminNotes ? (
+                      <div className="flex items-center gap-2 group/note relative">
+                        <Bell className="w-4 h-4 text-amber-500" />
+                        <span className="text-xs font-bold text-slate-500 truncate max-w-[150px]">{t.adminNotes}</span>
+                        <div className="absolute bottom-full left-0 mb-2 hidden group-hover/note:block z-50">
+                          <div className="bg-slate-900 text-white text-[10px] font-bold p-3 rounded-xl shadow-2xl min-w-[200px] leading-relaxed">
+                            {t.adminNotes}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">---</span>
+                    )}
                   </td>
                   <td className="px-8 py-6 text-xs font-bold text-slate-400">
                     {t.createdAt?.toDate().toLocaleString()}
@@ -2006,6 +2026,23 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {selectedProofImage && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-md" onClick={() => setSelectedProofImage(null)}>
+          <div className="relative max-w-4xl w-full max-h-[90vh] bg-white rounded-[2.5rem] overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+            <button 
+              onClick={() => setSelectedProofImage(null)}
+              className="absolute top-6 right-6 p-3 bg-white/90 backdrop-blur-sm text-slate-900 rounded-2xl hover:bg-red-50 hover:text-red-600 transition-all z-10 shadow-xl"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <div className="w-full h-full overflow-auto p-4 flex items-center justify-center bg-slate-50">
+              <img src={selectedProofImage} alt="Payment Proof" className="max-w-full h-auto rounded-xl shadow-lg" />
+            </div>
+          </div>
+        </div>
+      )}
+
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
           <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md p-10 text-center relative overflow-hidden">

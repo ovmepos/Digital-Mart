@@ -31,6 +31,7 @@ const Dashboard: React.FC = () => {
   const { user, profile } = useAuth();
   const [services, setServices] = useState<Service[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [manualTransfers, setManualTransfers] = useState<any[]>([]);
   const [plans, setPlans] = useState<any[]>([]);
   const [categoriesData, setCategoriesData] = useState<any[]>([]);
   
@@ -65,6 +66,14 @@ const Dashboard: React.FC = () => {
       setOrders(ords);
     });
 
+    // Fetch user manual transfers
+    const qManual = query(collection(db, 'manualTransfers'), where('userId', '==', user.uid));
+    const unsubManual = onSnapshot(qManual, (snapshot) => {
+      const transfers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      transfers.sort((a: any, b: any) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+      setManualTransfers(transfers);
+    });
+
     // Fetch plans
     const qPlans = query(collection(db, 'subscriptionPlans'), where('isActive', '==', true));
     const unsubPlans = onSnapshot(qPlans, (snapshot) => {
@@ -80,6 +89,7 @@ const Dashboard: React.FC = () => {
     return () => {
       unsubServices();
       unsubOrders();
+      unsubManual();
       unsubPlans();
       unsubCategories();
     };
@@ -433,6 +443,70 @@ const Dashboard: React.FC = () => {
                               <span className="mr-2">{getStatusIcon(order.status)}</span>
                               {order.status}
                             </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Manual Transfers History */}
+            <div className="bg-white shadow-xl shadow-slate-200 rounded-[2.5rem] border border-slate-100 overflow-hidden mt-8">
+              <div className="px-8 py-8 border-b border-slate-50 flex items-center justify-between bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center">
+                  <Wallet className="w-6 h-6 mr-3 text-emerald-600" /> Wallet History
+                </h2>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-100">
+                  <thead>
+                    <tr className="bg-slate-50/50">
+                      <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">ID</th>
+                      <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount</th>
+                      <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                      <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Notes</th>
+                      <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {manualTransfers.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-8 py-16 text-center">
+                          <p className="text-slate-500 text-sm font-medium">No wallet transactions found.</p>
+                        </td>
+                      </tr>
+                    ) : (
+                      manualTransfers.map((t) => (
+                        <tr key={t.id} className="group hover:bg-slate-50/50 transition-colors duration-300">
+                          <td className="px-8 py-6 whitespace-nowrap">
+                            <span className="text-xs font-black text-slate-400 font-mono">#{t.id.slice(0, 8).toUpperCase()}</span>
+                          </td>
+                          <td className="px-8 py-6 whitespace-nowrap">
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-sm font-black text-slate-900">{t.amount.toFixed(3)}</span>
+                              <span className="text-[10px] font-bold text-slate-400 uppercase">OMR</span>
+                            </div>
+                          </td>
+                          <td className="px-8 py-6 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest
+                              ${t.status === 'Approved' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 
+                                t.status === 'Rejected' ? 'bg-red-50 text-red-600 border border-red-100' : 
+                                'bg-amber-50 text-amber-600 border border-amber-100'}`}>
+                              {t.status}
+                            </span>
+                          </td>
+                          <td className="px-8 py-6">
+                            {t.adminNotes ? (
+                              <p className="text-xs font-bold text-red-600 leading-relaxed">{t.adminNotes}</p>
+                            ) : (
+                              <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">---</span>
+                            )}
+                          </td>
+                          <td className="px-8 py-6 text-xs font-bold text-slate-400">
+                            {t.createdAt?.toDate().toLocaleString()}
                           </td>
                         </tr>
                       ))
