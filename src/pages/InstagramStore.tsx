@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase';
 import { collection, query, where, onSnapshot, doc, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { handleFirestoreError, OperationType } from '../utils/firestoreErrorHandler';
 import { Instagram, Link as LinkIcon, TrendingUp, Heart, Eye, CheckCircle, AlertCircle, X, Loader2, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -51,14 +52,14 @@ const InstagramStore: React.FC = () => {
       // Filter primarily for Instagram services if they exist, otherwise show all
       const igServices = svcs.filter(s => s.category.toLowerCase().includes('instagram') || s.category.toLowerCase().includes('ig'));
       setServices(igServices.length > 0 ? igServices : svcs);
-    });
+    }, (error) => handleFirestoreError(error, OperationType.GET, 'services'));
     return () => unsubServices();
   }, [user]);
 
   useEffect(() => {
-    const unsubPlans = onSnapshot(collection(db, 'plans'), (snapshot) => {
+    const unsubPlans = onSnapshot(collection(db, 'subscriptionPlans'), (snapshot) => {
       setPlans(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
+    }, (error) => handleFirestoreError(error, OperationType.GET, 'subscriptionPlans'));
     return () => unsubPlans();
   }, []);
 

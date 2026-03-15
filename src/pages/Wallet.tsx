@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase';
 import { doc, collection, runTransaction, serverTimestamp, onSnapshot, query } from 'firebase/firestore';
+import { handleFirestoreError, OperationType } from '../utils/firestoreErrorHandler';
 import { Wallet as WalletIcon, CreditCard, CheckCircle, AlertCircle, Loader2, Building2, MessageCircle, Upload, QrCode } from 'lucide-react';
 import { addDoc } from 'firebase/firestore';
 
@@ -24,7 +25,7 @@ const Wallet: React.FC = () => {
       if (gws.length > 0 && !selectedGateway) {
         setSelectedGateway(gws[0].id);
       }
-    });
+    }, (error) => handleFirestoreError(error, OperationType.GET, 'paymentGateways'));
     return () => unsubscribe();
   }, []);
 

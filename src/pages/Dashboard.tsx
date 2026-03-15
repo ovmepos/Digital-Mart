@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp, doc, runTransaction } from 'firebase/firestore';
+import { handleFirestoreError, OperationType } from '../utils/firestoreErrorHandler';
 import { Clock, CheckCircle, Loader, XCircle, ShoppingBag, TrendingUp, Wallet, Crown } from 'lucide-react';
 
 interface Service {
@@ -55,7 +56,7 @@ const Dashboard: React.FC = () => {
       if (svcs.length > 0 && !selectedCategory) {
         setSelectedCategory(svcs[0].category);
       }
-    });
+    }, (error) => handleFirestoreError(error, OperationType.GET, 'services'));
 
     // Fetch user orders
     const qOrders = query(collection(db, 'orders'), where('userId', '==', user.uid));
@@ -64,7 +65,7 @@ const Dashboard: React.FC = () => {
       // Sort by createdAt descending locally
       ords.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
       setOrders(ords);
-    });
+    }, (error) => handleFirestoreError(error, OperationType.GET, 'orders'));
 
     // Fetch user manual transfers
     const qManual = query(collection(db, 'manualTransfers'), where('userId', '==', user.uid));
@@ -72,19 +73,19 @@ const Dashboard: React.FC = () => {
       const transfers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       transfers.sort((a: any, b: any) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
       setManualTransfers(transfers);
-    });
+    }, (error) => handleFirestoreError(error, OperationType.GET, 'manualTransfers'));
 
     // Fetch plans
     const qPlans = query(collection(db, 'subscriptionPlans'), where('isActive', '==', true));
     const unsubPlans = onSnapshot(qPlans, (snapshot) => {
       setPlans(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
+    }, (error) => handleFirestoreError(error, OperationType.GET, 'subscriptionPlans'));
 
     // Fetch categories
     const qCategories = query(collection(db, 'categories'), where('isActive', '==', true));
     const unsubCategories = onSnapshot(qCategories, (snapshot) => {
       setCategoriesData(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
+    }, (error) => handleFirestoreError(error, OperationType.GET, 'categories'));
 
     return () => {
       unsubServices();

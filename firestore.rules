@@ -294,6 +294,10 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    match /apiSettings/{settingId} {
+      allow read, write: if isAdmin();
+    }
+
     match /cart/{cartItemId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && isValidCartItem(request.resource.data) && 

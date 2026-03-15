@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase';
 import { collection, query, onSnapshot, doc, updateDoc, addDoc, deleteDoc, serverTimestamp, runTransaction, setDoc } from 'firebase/firestore';
+import { handleFirestoreError, OperationType } from '../utils/firestoreErrorHandler';
 import { Navigate } from 'react-router-dom';
 import { Users, ShoppingCart, Settings, PlusCircle, Trash2, CreditCard, Edit2, Image as ImageIcon, Wallet, Crown, Layers, Tag, ShieldCheck, ShoppingBag, List, ArrowRightLeft, Bell, User, Search, Filter, Calendar, CheckSquare, Square, AlertTriangle, Globe, RefreshCw, Link2, Menu, X } from 'lucide-react';
 
@@ -260,45 +261,45 @@ const AdminDashboard: React.FC = () => {
 
     const unsubOrders = onSnapshot(query(collection(db, 'orders')), (snapshot) => {
       setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
+    }, (error) => handleFirestoreError(error, OperationType.GET, 'orders'));
 
     const unsubUsers = onSnapshot(query(collection(db, 'users')), (snapshot) => {
       setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
+    }, (error) => handleFirestoreError(error, OperationType.GET, 'users'));
 
     const unsubServices = onSnapshot(query(collection(db, 'services')), (snapshot) => {
       setServices(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
+    }, (error) => handleFirestoreError(error, OperationType.GET, 'services'));
 
     const unsubTransactions = onSnapshot(query(collection(db, 'transactions')), (snapshot) => {
       setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
+    }, (error) => handleFirestoreError(error, OperationType.GET, 'transactions'));
 
     const unsubGateways = onSnapshot(query(collection(db, 'paymentGateways')), (snapshot) => {
       setGateways(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
+    }, (error) => handleFirestoreError(error, OperationType.GET, 'paymentGateways'));
 
     const unsubPlans = onSnapshot(query(collection(db, 'subscriptionPlans')), (snapshot) => {
       setPlans(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
+    }, (error) => handleFirestoreError(error, OperationType.GET, 'subscriptionPlans'));
 
     const unsubManualTransfers = onSnapshot(query(collection(db, 'manualTransfers')), (snapshot) => {
       setManualTransfers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
+    }, (error) => handleFirestoreError(error, OperationType.GET, 'manualTransfers'));
 
     const unsubCategories = onSnapshot(query(collection(db, 'categories')), (snapshot) => {
       setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
+    }, (error) => handleFirestoreError(error, OperationType.GET, 'categories'));
 
     const unsubTypes = onSnapshot(query(collection(db, 'serviceTypes')), (snapshot) => {
       setServiceTypes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
+    }, (error) => handleFirestoreError(error, OperationType.GET, 'serviceTypes'));
 
     const unsubApiSettings = onSnapshot(doc(db, 'apiSettings', 'yoyomedia'), (doc) => {
       if (doc.exists()) {
         setApiSettings(doc.data());
       }
-    });
+    }, (error) => handleFirestoreError(error, OperationType.GET, 'apiSettings/yoyomedia'));
 
     return () => {
       unsubOrders();
